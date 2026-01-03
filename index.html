@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK House Price Heatmap</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+
+    <!-- Application CSS (v3 - cache bust) -->
+    <link rel="stylesheet" href="css/main.css?v=3">
+    <link rel="stylesheet" href="css/map.css?v=3">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1>UK House Price Heatmap</h1>
+            <p class="subtitle">Explore 25+ years of property prices across the UK</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Controls Panel -->
+            <aside class="controls-panel">
+                <!-- Property Type Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Property Type</label>
+                    <div class="radio-group" id="property-type-filter">
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="A" checked>
+                            <span class="radio-label">All Types</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="D">
+                            <span class="radio-label">Detached</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="S">
+                            <span class="radio-label">Semi-Detached</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="T">
+                            <span class="radio-label">Terraced</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="F">
+                            <span class="radio-label">Flats/Maisonettes</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Year Filter -->
+                <div class="filter-group">
+                    <label class="filter-label" for="year-filter">Year</label>
+                    <div class="year-selector">
+                        <input type="range" id="year-slider" min="1995" max="2024" value="2024">
+                        <div class="year-display">
+                            <span id="year-value">2024</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="legend">
+                    <label class="filter-label">Average Price</label>
+                    <div class="legend-gradient"></div>
+                    <div class="legend-labels">
+                        <span id="legend-min">-</span>
+                        <span id="legend-max">-</span>
+                    </div>
+                </div>
+
+                <!-- Data Info -->
+                <div class="data-info">
+                    <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry</a></p>
+                </div>
+            </aside>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                <div class="loading-overlay" id="loading-overlay">
+                    <div class="loading-spinner"></div>
+                    <p>Loading map data...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Tooltip Template (hidden, cloned for use) -->
+    <div id="tooltip-template" class="tooltip" style="display: none;">
+        <div class="tooltip-header">
+            <span class="tooltip-title"></span>
+            <button class="tooltip-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="tooltip-subtitle"></div>
+        <div class="tooltip-content">
+            <div class="tooltip-row">
+                <span class="tooltip-label">Average:</span>
+                <span class="tooltip-value average-price"></span>
+            </div>
+            <div class="tooltip-row">
+                <span class="tooltip-label">Median:</span>
+                <span class="tooltip-value median-price"></span>
+            </div>
+            <div class="tooltip-row">
+                <span class="tooltip-label">Sales:</span>
+                <span class="tooltip-value transaction-count"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <!-- Application JS (v3 - cache bust) -->
+    <script src="js/data-loader.js?v=3"></script>
+    <script src="js/map.js?v=3"></script>
+    <script src="js/heatmap.js?v=3"></script>
+    <script src="js/filters.js?v=3"></script>
+    <script src="js/tooltip.js?v=3"></script>
+    <script src="js/main.js?v=3"></script>
+</body>
+</html>

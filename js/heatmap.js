@@ -69,9 +69,9 @@ const HeatmapModule = (function() {
         return {
             fillColor: fillColor,
             fillOpacity: fillOpacity,
-            color: '#333333',
-            weight: 0.5,
-            opacity: 0.4
+            color: fillColor,  // Match stroke to fill to eliminate seam artifacts
+            weight: 1,
+            opacity: 1
         };
     }
 
@@ -94,8 +94,9 @@ const HeatmapModule = (function() {
             mouseover: function(e) {
                 const layer = e.target;
                 layer.setStyle({
+                    color: '#333333',  // Dark border on hover for contrast
                     weight: 2,
-                    opacity: 0.8,
+                    opacity: 1,
                     fillOpacity: 0.85
                 });
                 layer.bringToFront();

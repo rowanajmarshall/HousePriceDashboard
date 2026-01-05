@@ -178,14 +178,12 @@ const DataLoader = (function() {
             return null;
         }
 
-        // Use percentiles to avoid outliers skewing the scale
+        // Use absolute min and max values for the color scale
         prices.sort((a, b) => a - b);
-        const p5Index = Math.floor(prices.length * 0.05);
-        const p95Index = Math.floor(prices.length * 0.95);
 
         return {
-            min: prices[p5Index],
-            max: prices[p95Index],
+            min: prices[0],
+            max: prices[prices.length - 1],
             absoluteMin: prices[0],
             absoluteMax: prices[prices.length - 1]
         };
@@ -267,13 +265,12 @@ const DataLoader = (function() {
             return null;
         }
 
+        // Use absolute min and max values for the color scale
         changes.sort((a, b) => a - b);
-        const p5Index = Math.floor(changes.length * 0.05);
-        const p95Index = Math.floor(changes.length * 0.95);
 
         return {
-            min: changes[p5Index],
-            max: changes[p95Index],
+            min: changes[0],
+            max: changes[changes.length - 1],
             absoluteMin: changes[0],
             absoluteMax: changes[changes.length - 1]
         };

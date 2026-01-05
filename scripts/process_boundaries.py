@@ -35,7 +35,7 @@ except ImportError:
 
 # Configuration
 INPUT_FILE = "raw_data/postcode_sectors.shp"  # Or .geojson
-OUTPUT_FILE = "../data/boundaries.geojson"
+OUTPUT_FILE = "../public/data/boundaries.geojson"
 
 # Coordinate precision (decimal places)
 COORD_PRECISION = 5

@@ -59,7 +59,7 @@ POSTCODE_AREAS = [
 POSTCODE_AREAS = sorted(set(POSTCODE_AREAS))
 
 BASE_URL = "https://raw.githubusercontent.com/missinglink/uk-postcode-polygons/master/geojson/{}.geojson"
-OUTPUT_FILE = "../data/boundaries.geojson"
+OUTPUT_FILE = "../public/data/boundaries.geojson"
 
 
 def download_area(area_code):

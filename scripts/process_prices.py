@@ -28,7 +28,7 @@ from tqdm import tqdm
 
 # Configuration
 INPUT_FILE = "raw_data/pp-complete.csv"
-OUTPUT_DIR = "../data/prices"
+OUTPUT_DIR = "../public/data/prices"
 
 # Land Registry CSV columns (no headers in file)
 COLUMNS = [

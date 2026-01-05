@@ -20,9 +20,9 @@ import os
 from shapely.geometry import shape, mapping
 from shapely.validation import make_valid
 
-INPUT_FILE = "../data/boundaries.geojson"
-OUTPUT_FILE = "../data/boundaries.geojson"
-BACKUP_FILE = "../data/boundaries_original.geojson"
+INPUT_FILE = "../public/data/boundaries.geojson"
+OUTPUT_FILE = "../public/data/boundaries.geojson"
+BACKUP_FILE = "../public/data/boundaries_original.geojson"
 
 # Tolerance in degrees - higher = more simplification
 # 0.0005 degrees ≈ 50 meters at UK latitudes

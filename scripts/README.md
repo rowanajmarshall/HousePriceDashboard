@@ -28,7 +28,7 @@ Downloads UK postcode district boundaries from GitHub and combines them into a s
 uv run download_boundaries.py
 ```
 
-**Output:** `../data/boundaries.geojson` (~8MB, 2,736 districts)
+**Output:** `../public/data/boundaries.geojson` (~4MB simplified, 2,736 districts)
 
 **Note:** Currently excludes Northern Ireland (BT postcodes) as the source doesn't include them.
 
@@ -51,10 +51,10 @@ uv run process_prices.py
 ```
 
 **Output:**
-- `../data/prices/1995.json`
-- `../data/prices/1996.json`
+- `../public/data/prices/1995.json`
+- `../public/data/prices/1996.json`
 - ... (one file per year)
-- `../data/prices/2024.json`
+- `../public/data/prices/2024.json`
 
 ### `process_boundaries.py`
 Converts custom postcode boundary shapefiles to GeoJSON format (for advanced use cases).

@@ -44,16 +44,29 @@ const TooltipModule = (function() {
     function handleSectorClick(e) {
         const { feature, latlng } = e.detail;
 
-        // Get current filter state
-        const filterState = FiltersModule.getState();
-
-        // Get price data for this sector
+        // Get sector info
         const sectorId = feature.properties.id;
         const sectorCode = feature.properties.sector_code || sectorId;
-        const stats = DataLoader.getPriceStats(sectorId, filterState.year, filterState.propertyType);
 
-        // Show tooltip
-        show(sectorCode, stats, filterState, latlng);
+        // Check which view mode we're in
+        const viewMode = HeatmapModule.getViewMode();
+
+        if (viewMode === 'change') {
+            // Get change view filter state
+            const changeState = FiltersModule.getChangeState();
+            const changeData = DataLoader.getPriceChange(
+                sectorId,
+                changeState.startYear,
+                changeState.endYear,
+                changeState.propertyType
+            );
+            showChangeTooltip(sectorCode, changeData, changeState, latlng);
+        } else {
+            // Get current filter state
+            const filterState = FiltersModule.getState();
+            const stats = DataLoader.getPriceStats(sectorId, filterState.year, filterState.propertyType);
+            show(sectorCode, stats, filterState, latlng);
+        }
     }
 
     /**
@@ -89,6 +102,81 @@ const TooltipModule = (function() {
             // No data state
             const content = tooltip.querySelector('.tooltip-content');
             content.innerHTML = '<div class="tooltip-no-data">No sales data available for this combination.</div>';
+        }
+
+        // Add close button handler
+        const closeBtn = tooltip.querySelector('.tooltip-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                close();
+            });
+        }
+
+        // Add to DOM
+        document.body.appendChild(tooltip);
+        activeTooltip = tooltip;
+
+        // Position tooltip
+        positionTooltip(tooltip, latlng);
+    }
+
+    /**
+     * Show tooltip with change data
+     * @param {string} sectorCode - Postcode sector code
+     * @param {Object|null} changeData - Price change data
+     * @param {Object} changeState - Current change filter state
+     * @param {L.LatLng} latlng - Click position
+     */
+    function showChangeTooltip(sectorCode, changeData, changeState, latlng) {
+        // Close existing tooltip
+        close();
+
+        // Clone the template
+        const template = document.getElementById('tooltip-template');
+        if (!template) return;
+
+        const tooltip = template.cloneNode(true);
+        tooltip.id = 'active-tooltip';
+        tooltip.style.display = 'block';
+
+        // Populate content
+        tooltip.querySelector('.tooltip-title').textContent = sectorCode;
+        tooltip.querySelector('.tooltip-subtitle').textContent =
+            `${FiltersModule.getPropertyTypeLabel(changeState.propertyType)} - ${changeState.startYear} to ${changeState.endYear}`;
+
+        const content = tooltip.querySelector('.tooltip-content');
+
+        if (changeData) {
+            // Format the change percentage with color (red = increase, green = decrease)
+            const changePercent = changeData.changePercent;
+            const changeColor = changePercent >= 0 ? '#c0392b' : '#27ae60';
+            const changeSign = changePercent >= 0 ? '+' : '';
+
+            content.innerHTML = `
+                <div class="tooltip-row">
+                    <span class="tooltip-label">${changeState.startYear} Avg:</span>
+                    <span class="tooltip-value">${formatPriceFull(changeData.startPrice)}</span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">${changeState.endYear} Avg:</span>
+                    <span class="tooltip-value">${formatPriceFull(changeData.endPrice)}</span>
+                </div>
+                <div class="tooltip-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
+                    <span class="tooltip-label">Change:</span>
+                    <span class="tooltip-value" style="color: ${changeColor}; font-size: 16px;">
+                        ${changeSign}${Math.round(changePercent)}%
+                    </span>
+                </div>
+                <div class="tooltip-row">
+                    <span class="tooltip-label">Amount:</span>
+                    <span class="tooltip-value" style="color: ${changeColor};">
+                        ${changeSign}${formatPriceFull(changeData.changeAmount)}
+                    </span>
+                </div>
+            `;
+        } else {
+            content.innerHTML = '<div class="tooltip-no-data">No comparable data available for this period.</div>';
         }
 
         // Add close button handler

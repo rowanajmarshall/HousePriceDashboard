@@ -192,6 +192,94 @@ const DataLoader = (function() {
     }
 
     /**
+     * Get price change data for a sector between two years
+     * @param {string} sectorId - Postcode sector ID
+     * @param {number} startYear - Starting year
+     * @param {number} endYear - Ending year
+     * @param {string} propertyType - Property type code
+     * @returns {Object|null} Change data or null if insufficient data
+     */
+    function getPriceChange(sectorId, startYear, endYear, propertyType) {
+        const startStats = getPriceStats(sectorId, startYear, propertyType);
+        const endStats = getPriceStats(sectorId, endYear, propertyType);
+
+        if (!startStats || !endStats || !startStats.avg || !endStats.avg) {
+            return null;
+        }
+
+        const changeAmount = endStats.avg - startStats.avg;
+        const changePercent = (changeAmount / startStats.avg) * 100;
+
+        return {
+            startPrice: startStats.avg,
+            endPrice: endStats.avg,
+            changeAmount: changeAmount,
+            changePercent: changePercent,
+            startCount: startStats.count,
+            endCount: endStats.count
+        };
+    }
+
+    /**
+     * Get all percentage changes for a given year range and property type
+     * Used for calculating color scale ranges
+     * @param {number} startYear - Starting year
+     * @param {number} endYear - Ending year
+     * @param {string} propertyType - Property type code
+     * @returns {number[]} Array of percentage changes
+     */
+    function getAllPriceChanges(startYear, endYear, propertyType) {
+        const startData = cache.prices[startYear];
+        const endData = cache.prices[endYear];
+
+        if (!startData?.data || !endData?.data) {
+            return [];
+        }
+
+        const changes = [];
+
+        // Get all sector IDs that exist in both years
+        const sectorIds = new Set([
+            ...Object.keys(startData.data),
+            ...Object.keys(endData.data)
+        ]);
+
+        for (const sectorId of sectorIds) {
+            const change = getPriceChange(sectorId, startYear, endYear, propertyType);
+            if (change) {
+                changes.push(change.changePercent);
+            }
+        }
+
+        return changes;
+    }
+
+    /**
+     * Calculate min and max percentage changes for color scale
+     * @param {number} startYear - Starting year
+     * @param {number} endYear - Ending year
+     * @param {string} propertyType - Property type code
+     * @returns {Object} { min, max } or null if no data
+     */
+    function getChangeRange(startYear, endYear, propertyType) {
+        const changes = getAllPriceChanges(startYear, endYear, propertyType);
+        if (changes.length === 0) {
+            return null;
+        }
+
+        changes.sort((a, b) => a - b);
+        const p5Index = Math.floor(changes.length * 0.05);
+        const p95Index = Math.floor(changes.length * 0.95);
+
+        return {
+            min: changes[p5Index],
+            max: changes[p95Index],
+            absoluteMin: changes[0],
+            absoluteMax: changes[changes.length - 1]
+        };
+    }
+
+    /**
      * Check if data is loaded for a specific year
      * @param {number} year - Year to check
      * @returns {boolean}
@@ -238,6 +326,9 @@ const DataLoader = (function() {
         getPriceStats,
         getAllPrices,
         getPriceRange,
+        getPriceChange,
+        getAllPriceChanges,
+        getChangeRange,
         isYearLoaded,
         areBoundariesLoaded,
         getAvailableYears,

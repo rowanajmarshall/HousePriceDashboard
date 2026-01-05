@@ -40,12 +40,19 @@
             // Initialize filters
             FiltersModule.init({
                 onChange: handleFilterChange,
+                onChangeView: handleChangeViewFilterChange,
                 minYear: config.minYear,
                 maxYear: config.maxYear,
                 defaultPropertyType: config.defaultPropertyType,
                 defaultYear: config.defaultYear
             });
             console.log('Filters initialized');
+
+            // Initialize tabs
+            TabsModule.init({
+                onChange: handleTabChange
+            });
+            console.log('Tabs initialized');
 
             // Load boundaries and initial price data
             console.log('Loading data...');
@@ -113,6 +120,75 @@
 
         } catch (error) {
             console.error('Failed to update heatmap:', error);
+            FiltersModule.enable();
+            showLoading(false);
+        }
+    }
+
+    /**
+     * Handle change view filter changes
+     * @param {Object} event - Filter change event
+     */
+    async function handleChangeViewFilterChange(event) {
+        if (!app.initialized) return;
+
+        // Only process if we're on the change tab
+        if (TabsModule.getActiveTab() !== 'change') return;
+
+        console.log('Change view filter changed:', event);
+
+        try {
+            TooltipModule.close();
+            FiltersModule.disable();
+            showLoading(true, 'Calculating changes...');
+
+            await HeatmapModule.updateChangeView(
+                event.state.startYear,
+                event.state.endYear,
+                event.state.propertyType
+            );
+
+            FiltersModule.enable();
+            showLoading(false);
+
+        } catch (error) {
+            console.error('Failed to update change view:', error);
+            FiltersModule.enable();
+            showLoading(false);
+        }
+    }
+
+    /**
+     * Handle tab switching
+     * @param {Object} event - Tab change event
+     */
+    async function handleTabChange(event) {
+        if (!app.initialized) return;
+
+        console.log('Tab changed:', event.tab);
+
+        try {
+            TooltipModule.close();
+            FiltersModule.disable();
+
+            if (event.tab === 'price') {
+                showLoading(true, 'Loading price data...');
+                await HeatmapModule.switchToPriceView();
+            } else if (event.tab === 'change') {
+                showLoading(true, 'Calculating changes...');
+                const changeState = FiltersModule.getChangeState();
+                await HeatmapModule.updateChangeView(
+                    changeState.startYear,
+                    changeState.endYear,
+                    changeState.propertyType
+                );
+            }
+
+            FiltersModule.enable();
+            showLoading(false);
+
+        } catch (error) {
+            console.error('Failed to switch tab:', error);
             FiltersModule.enable();
             showLoading(false);
         }
@@ -198,6 +274,7 @@
         MapModule,
         HeatmapModule,
         FiltersModule,
+        TabsModule,
         TooltipModule
     };
 })();

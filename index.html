@@ -10,9 +10,9 @@
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin="">
 
-    <!-- Application CSS (v3 - cache bust) -->
-    <link rel="stylesheet" href="css/main.css?v=3">
-    <link rel="stylesheet" href="css/map.css?v=3">
+    <!-- Application CSS (v4 - cache bust) -->
+    <link rel="stylesheet" href="css/main.css?v=4">
+    <link rel="stylesheet" href="css/map.css?v=4">
 </head>
 <body>
     <div class="app-container">
@@ -26,51 +26,123 @@
         <main class="main-content">
             <!-- Controls Panel -->
             <aside class="controls-panel">
-                <!-- Property Type Filter -->
-                <div class="filter-group">
-                    <label class="filter-label">Property Type</label>
-                    <div class="radio-group" id="property-type-filter">
-                        <label class="radio-option">
-                            <input type="radio" name="property-type" value="A" checked>
-                            <span class="radio-label">All Types</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="property-type" value="D">
-                            <span class="radio-label">Detached</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="property-type" value="S">
-                            <span class="radio-label">Semi-Detached</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="property-type" value="T">
-                            <span class="radio-label">Terraced</span>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="property-type" value="F">
-                            <span class="radio-label">Flats/Maisonettes</span>
-                        </label>
-                    </div>
+                <!-- Tab Buttons -->
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="price">Price View</button>
+                    <button class="tab-btn" data-tab="change">Change View</button>
                 </div>
 
-                <!-- Year Filter -->
-                <div class="filter-group">
-                    <label class="filter-label" for="year-filter">Year</label>
-                    <div class="year-selector">
-                        <input type="range" id="year-slider" min="1995" max="2024" value="2024">
-                        <div class="year-display">
-                            <span id="year-value">2024</span>
+                <!-- Tab 1: Price View -->
+                <div class="tab-content active" id="tab-price">
+                    <!-- Property Type Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label">Property Type</label>
+                        <div class="radio-group" id="property-type-filter">
+                            <label class="radio-option">
+                                <input type="radio" name="property-type" value="A" checked>
+                                <span class="radio-label">All Types</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="property-type" value="D">
+                                <span class="radio-label">Detached</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="property-type" value="S">
+                                <span class="radio-label">Semi-Detached</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="property-type" value="T">
+                                <span class="radio-label">Terraced</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="property-type" value="F">
+                                <span class="radio-label">Flats/Maisonettes</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Year Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label" for="year-filter">Year</label>
+                        <div class="year-selector">
+                            <input type="range" id="year-slider" min="1995" max="2024" value="2024">
+                            <div class="year-display">
+                                <span id="year-value">2024</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="legend" id="price-legend">
+                        <label class="filter-label">Average Price</label>
+                        <div class="legend-gradient"></div>
+                        <div class="legend-labels">
+                            <span id="legend-min">-</span>
+                            <span id="legend-max">-</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Legend -->
-                <div class="legend">
-                    <label class="filter-label">Average Price</label>
-                    <div class="legend-gradient"></div>
-                    <div class="legend-labels">
-                        <span id="legend-min">-</span>
-                        <span id="legend-max">-</span>
+                <!-- Tab 2: Change View -->
+                <div class="tab-content" id="tab-change">
+                    <!-- Property Type Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label">Property Type</label>
+                        <div class="radio-group" id="change-property-type-filter">
+                            <label class="radio-option">
+                                <input type="radio" name="change-property-type" value="A" checked>
+                                <span class="radio-label">All Types</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="change-property-type" value="D">
+                                <span class="radio-label">Detached</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="change-property-type" value="S">
+                                <span class="radio-label">Semi-Detached</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="change-property-type" value="T">
+                                <span class="radio-label">Terraced</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="change-property-type" value="F">
+                                <span class="radio-label">Flats/Maisonettes</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Start Year Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label">Start Year</label>
+                        <div class="year-selector">
+                            <input type="range" id="start-year-slider" min="1995" max="2024" value="2014">
+                            <div class="year-display">
+                                <span id="start-year-value">2014</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- End Year Filter -->
+                    <div class="filter-group">
+                        <label class="filter-label">End Year</label>
+                        <div class="year-selector">
+                            <input type="range" id="end-year-slider" min="1995" max="2024" value="2024">
+                            <div class="year-display">
+                                <span id="end-year-value">2024</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Legend -->
+                    <div class="legend" id="change-legend">
+                        <label class="filter-label">Price Change</label>
+                        <div class="legend-gradient change"></div>
+                        <div class="legend-labels">
+                            <span id="change-legend-min">-50%</span>
+                            <span id="change-legend-mid">0%</span>
+                            <span id="change-legend-max">+100%</span>
+                        </div>
                     </div>
                 </div>
 
@@ -119,13 +191,14 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
 
-    <!-- Application JS (v3 - cache bust) -->
-    <script src="js/data-loader.js?v=3"></script>
-    <script src="js/map.js?v=3"></script>
-    <script src="js/heatmap.js?v=3"></script>
-    <script src="js/filters.js?v=3"></script>
-    <script src="js/tooltip.js?v=3"></script>
-    <script src="js/main.js?v=3"></script>
+    <!-- Application JS (v4 - cache bust) -->
+    <script src="js/data-loader.js?v=4"></script>
+    <script src="js/map.js?v=4"></script>
+    <script src="js/heatmap.js?v=4"></script>
+    <script src="js/filters.js?v=4"></script>
+    <script src="js/tabs.js?v=4"></script>
+    <script src="js/tooltip.js?v=4"></script>
+    <script src="js/main.js?v=4"></script>
     <!-- 100% privacy-first analytics -->
 <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
 </body>

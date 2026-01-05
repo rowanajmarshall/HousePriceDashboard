@@ -1,16 +1,24 @@
 /**
  * Filters Module
- * Manages filter UI controls and state
+ * Manages filter UI controls and state for both Price View and Change View
  */
 const FiltersModule = (function() {
-    // Current filter state
+    // Price view filter state
     let state = {
         propertyType: 'A', // Default: All Types
         year: new Date().getFullYear() // Default: Current year
     };
 
+    // Change view filter state
+    let changeState = {
+        propertyType: 'A',
+        startYear: 2014,
+        endYear: new Date().getFullYear()
+    };
+
     // Callback for filter changes
     let onChangeCallback = null;
+    let onChangeViewCallback = null;
 
     // Property type labels
     const propertyTypeLabels = {
@@ -24,7 +32,8 @@ const FiltersModule = (function() {
     /**
      * Initialize filter controls
      * @param {Object} options - Configuration options
-     * @param {Function} options.onChange - Callback when filters change
+     * @param {Function} options.onChange - Callback when price view filters change
+     * @param {Function} options.onChangeView - Callback when change view filters change
      * @param {number} options.minYear - Minimum year for slider
      * @param {number} options.maxYear - Maximum year for slider
      * @param {string} options.defaultPropertyType - Default property type
@@ -33,6 +42,7 @@ const FiltersModule = (function() {
     function init(options = {}) {
         const {
             onChange,
+            onChangeView,
             minYear = 1995,
             maxYear = new Date().getFullYear(),
             defaultPropertyType = 'F',
@@ -40,16 +50,24 @@ const FiltersModule = (function() {
         } = options;
 
         onChangeCallback = onChange;
+        onChangeViewCallback = onChangeView;
 
         // Set initial state
         state.propertyType = defaultPropertyType;
         state.year = defaultYear;
 
-        // Initialize property type filter
-        initPropertyTypeFilter();
+        // Set initial change state
+        changeState.propertyType = defaultPropertyType;
+        changeState.startYear = Math.max(minYear, maxYear - 10); // Default: 10 years ago
+        changeState.endYear = maxYear;
 
-        // Initialize year slider
+        // Initialize price view controls
+        initPropertyTypeFilter();
         initYearSlider(minYear, maxYear, defaultYear);
+
+        // Initialize change view controls
+        initChangePropertyTypeFilter();
+        initChangeYearSliders(minYear, maxYear);
     }
 
     /**
@@ -126,11 +144,121 @@ const FiltersModule = (function() {
     }
 
     /**
-     * Get current filter state
+     * Initialize change view property type radio buttons
+     */
+    function initChangePropertyTypeFilter() {
+        const container = document.getElementById('change-property-type-filter');
+        if (!container) return;
+
+        const radios = container.querySelectorAll('input[type="radio"]');
+        radios.forEach(radio => {
+            // Set initial checked state
+            if (radio.value === changeState.propertyType) {
+                radio.checked = true;
+            }
+
+            // Add change listener
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    changeState.propertyType = this.value;
+                    triggerChangeViewCallback('propertyType');
+                }
+            });
+        });
+    }
+
+    /**
+     * Initialize change view year sliders
+     * @param {number} minYear
+     * @param {number} maxYear
+     */
+    function initChangeYearSliders(minYear, maxYear) {
+        // Start year slider
+        const startSlider = document.getElementById('start-year-slider');
+        const startDisplay = document.getElementById('start-year-value');
+
+        if (startSlider && startDisplay) {
+            startSlider.min = minYear;
+            startSlider.max = maxYear;
+            startSlider.value = changeState.startYear;
+            startDisplay.textContent = changeState.startYear;
+
+            startSlider.addEventListener('input', function() {
+                startDisplay.textContent = this.value;
+            });
+
+            startSlider.addEventListener('change', function() {
+                const newYear = parseInt(this.value, 10);
+                // Ensure start year is strictly before end year
+                if (newYear >= changeState.endYear) {
+                    const maxStart = changeState.endYear - 1;
+                    this.value = maxStart;
+                    startDisplay.textContent = maxStart;
+                    changeState.startYear = maxStart;
+                } else {
+                    changeState.startYear = newYear;
+                }
+                triggerChangeViewCallback('startYear');
+            });
+        }
+
+        // End year slider
+        const endSlider = document.getElementById('end-year-slider');
+        const endDisplay = document.getElementById('end-year-value');
+
+        if (endSlider && endDisplay) {
+            endSlider.min = minYear;
+            endSlider.max = maxYear;
+            endSlider.value = changeState.endYear;
+            endDisplay.textContent = changeState.endYear;
+
+            endSlider.addEventListener('input', function() {
+                endDisplay.textContent = this.value;
+            });
+
+            endSlider.addEventListener('change', function() {
+                const newYear = parseInt(this.value, 10);
+                // Ensure end year is strictly after start year
+                if (newYear <= changeState.startYear) {
+                    const minEnd = changeState.startYear + 1;
+                    this.value = minEnd;
+                    endDisplay.textContent = minEnd;
+                    changeState.endYear = minEnd;
+                } else {
+                    changeState.endYear = newYear;
+                }
+                triggerChangeViewCallback('endYear');
+            });
+        }
+    }
+
+    /**
+     * Trigger callback for change view updates
+     * @param {string} changedField
+     */
+    function triggerChangeViewCallback(changedField) {
+        if (onChangeViewCallback) {
+            onChangeViewCallback({
+                type: changedField,
+                state: { ...changeState }
+            });
+        }
+    }
+
+    /**
+     * Get current price view filter state
      * @returns {Object}
      */
     function getState() {
         return { ...state };
+    }
+
+    /**
+     * Get current change view filter state
+     * @returns {Object}
+     */
+    function getChangeState() {
+        return { ...changeState };
     }
 
     /**
@@ -185,7 +313,10 @@ const FiltersModule = (function() {
      * Disable all filter controls
      */
     function disable() {
-        const controls = document.querySelectorAll('#property-type-filter input, #year-slider');
+        const controls = document.querySelectorAll(
+            '#property-type-filter input, #year-slider, ' +
+            '#change-property-type-filter input, #start-year-slider, #end-year-slider'
+        );
         controls.forEach(el => el.disabled = true);
     }
 
@@ -193,7 +324,10 @@ const FiltersModule = (function() {
      * Enable all filter controls
      */
     function enable() {
-        const controls = document.querySelectorAll('#property-type-filter input, #year-slider');
+        const controls = document.querySelectorAll(
+            '#property-type-filter input, #year-slider, ' +
+            '#change-property-type-filter input, #start-year-slider, #end-year-slider'
+        );
         controls.forEach(el => el.disabled = false);
     }
 
@@ -201,6 +335,7 @@ const FiltersModule = (function() {
     return {
         init,
         getState,
+        getChangeState,
         getPropertyTypeLabel,
         setState,
         disable,

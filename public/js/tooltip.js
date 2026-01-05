@@ -54,11 +54,13 @@ const TooltipModule = (function() {
         if (viewMode === 'change') {
             // Get change view filter state
             const changeState = FiltersModule.getChangeState();
+            const adjustInflation = changeState.adjustmentMode === 'real';
             const changeData = DataLoader.getPriceChange(
                 sectorId,
                 changeState.startYear,
                 changeState.endYear,
-                changeState.propertyType
+                changeState.propertyType,
+                adjustInflation
             );
             showChangeTooltip(sectorCode, changeData, changeState, latlng);
         } else {
@@ -140,10 +142,14 @@ const TooltipModule = (function() {
         tooltip.id = 'active-tooltip';
         tooltip.style.display = 'block';
 
+        // Check if we're showing inflation-adjusted values
+        const isReal = changeState.adjustmentMode === 'real';
+        const modeLabel = isReal ? ' (Real)' : '';
+
         // Populate content
         tooltip.querySelector('.tooltip-title').textContent = sectorCode;
         tooltip.querySelector('.tooltip-subtitle').textContent =
-            `${FiltersModule.getPropertyTypeLabel(changeState.propertyType)} - ${changeState.startYear} to ${changeState.endYear}`;
+            `${FiltersModule.getPropertyTypeLabel(changeState.propertyType)} - ${changeState.startYear} to ${changeState.endYear}${modeLabel}`;
 
         const content = tooltip.querySelector('.tooltip-content');
 
@@ -153,17 +159,41 @@ const TooltipModule = (function() {
             const changeColor = changePercent >= 0 ? '#c0392b' : '#27ae60';
             const changeSign = changePercent >= 0 ? '+' : '';
 
-            content.innerHTML = `
-                <div class="tooltip-row">
-                    <span class="tooltip-label">${changeState.startYear} Avg:</span>
-                    <span class="tooltip-value">${formatPriceFull(changeData.startPrice)}</span>
-                </div>
-                <div class="tooltip-row">
-                    <span class="tooltip-label">${changeState.endYear} Avg:</span>
-                    <span class="tooltip-value">${formatPriceFull(changeData.endPrice)}</span>
-                </div>
+            let html = '';
+
+            if (isReal) {
+                // Show inflation-adjusted comparison
+                html = `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">${changeState.startYear} (in ${changeState.endYear} £):</span>
+                        <span class="tooltip-value">${formatPriceFull(changeData.startPrice)}</span>
+                    </div>
+                    <div class="tooltip-row" style="font-size: 11px; color: #888;">
+                        <span class="tooltip-label">Nominal:</span>
+                        <span class="tooltip-value">${formatPriceFull(changeData.nominalStartPrice)}</span>
+                    </div>
+                    <div class="tooltip-row" style="margin-top: 6px;">
+                        <span class="tooltip-label">${changeState.endYear} Avg:</span>
+                        <span class="tooltip-value">${formatPriceFull(changeData.endPrice)}</span>
+                    </div>
+                `;
+            } else {
+                // Show nominal values
+                html = `
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">${changeState.startYear} Avg:</span>
+                        <span class="tooltip-value">${formatPriceFull(changeData.startPrice)}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">${changeState.endYear} Avg:</span>
+                        <span class="tooltip-value">${formatPriceFull(changeData.endPrice)}</span>
+                    </div>
+                `;
+            }
+
+            html += `
                 <div class="tooltip-row" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e0e0e0;">
-                    <span class="tooltip-label">Change:</span>
+                    <span class="tooltip-label">${isReal ? 'Real Change:' : 'Change:'}</span>
                     <span class="tooltip-value" style="color: ${changeColor}; font-size: 16px;">
                         ${changeSign}${Math.round(changePercent)}%
                     </span>
@@ -175,6 +205,8 @@ const TooltipModule = (function() {
                     </span>
                 </div>
             `;
+
+            content.innerHTML = html;
         } else {
             content.innerHTML = '<div class="tooltip-no-data">No comparable data available for this period.</div>';
         }

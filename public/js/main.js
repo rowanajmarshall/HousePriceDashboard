@@ -54,11 +54,12 @@
             });
             console.log('Tabs initialized');
 
-            // Load boundaries and initial price data
+            // Load boundaries, initial price data, and inflation data
             console.log('Loading data...');
             const [boundaries] = await Promise.all([
                 DataLoader.loadBoundaries(),
-                DataLoader.loadPriceData(config.defaultYear)
+                DataLoader.loadPriceData(config.defaultYear),
+                DataLoader.loadInflation()
             ]);
             console.log('Data loaded');
 
@@ -142,10 +143,12 @@
             FiltersModule.disable();
             showLoading(true, 'Calculating changes...');
 
+            const adjustInflation = event.state.adjustmentMode === 'real';
             await HeatmapModule.updateChangeView(
                 event.state.startYear,
                 event.state.endYear,
-                event.state.propertyType
+                event.state.propertyType,
+                adjustInflation
             );
 
             FiltersModule.enable();
@@ -177,10 +180,12 @@
             } else if (event.tab === 'change') {
                 showLoading(true, 'Calculating changes...');
                 const changeState = FiltersModule.getChangeState();
+                const adjustInflation = changeState.adjustmentMode === 'real';
                 await HeatmapModule.updateChangeView(
                     changeState.startYear,
                     changeState.endYear,
-                    changeState.propertyType
+                    changeState.propertyType,
+                    adjustInflation
                 );
             }
 

@@ -189,6 +189,16 @@ html, body {
     background-color: var(--color-background);
 }
 
+.radio-group-horizontal {
+    flex-direction: row;
+    gap: var(--spacing-sm);
+}
+
+.radio-group-horizontal .radio-option {
+    flex: 1;
+    justify-content: center;
+}
+
 .radio-option input[type="radio"] {
     width: 18px;
     height: 18px;

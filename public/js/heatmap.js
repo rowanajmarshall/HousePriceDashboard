@@ -19,6 +19,7 @@ const HeatmapModule = (function() {
     let currentEndYear = null;
     let currentChangePropertyType = null;
     let currentChangeRange = null;
+    let currentAdjustInflation = false;
 
     // Colors for price view
     const colors = {
@@ -243,7 +244,8 @@ const HeatmapModule = (function() {
             sectorId,
             currentStartYear,
             currentEndYear,
-            currentChangePropertyType
+            currentChangePropertyType,
+            currentAdjustInflation
         );
 
         let fillColor = changeColors.noData;
@@ -272,8 +274,9 @@ const HeatmapModule = (function() {
      * @param {number} startYear - Start year
      * @param {number} endYear - End year
      * @param {string} propertyType - Property type
+     * @param {boolean} adjustInflation - Whether to adjust for inflation
      */
-    async function updateChangeView(startYear, endYear, propertyType) {
+    async function updateChangeView(startYear, endYear, propertyType, adjustInflation = false) {
         if (!geoJsonLayer) {
             console.warn('Heatmap not initialized');
             return;
@@ -290,9 +293,10 @@ const HeatmapModule = (function() {
         currentStartYear = startYear;
         currentEndYear = endYear;
         currentChangePropertyType = propertyType;
+        currentAdjustInflation = adjustInflation;
 
         // Calculate change range
-        currentChangeRange = DataLoader.getChangeRange(startYear, endYear, propertyType);
+        currentChangeRange = DataLoader.getChangeRange(startYear, endYear, propertyType, adjustInflation);
 
         // Update all polygon styles
         geoJsonLayer.eachLayer(function(layer) {

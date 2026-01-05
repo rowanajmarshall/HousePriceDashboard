@@ -6,13 +6,15 @@ const DataLoader = (function() {
     // Cache for loaded data
     const cache = {
         boundaries: null,
-        prices: {} // Keyed by year
+        prices: {}, // Keyed by year
+        inflation: null // CPI data
     };
 
     // Configuration
     const config = {
         boundariesPath: 'data/boundaries.geojson',
-        pricesPath: 'data/prices' // Will append /{year}.json
+        pricesPath: 'data/prices', // Will append /{year}.json
+        inflationPath: 'data/inflation.json'
     };
 
     /**
@@ -35,6 +37,50 @@ const DataLoader = (function() {
             console.error('Error loading boundaries:', error);
             throw error;
         }
+    }
+
+    /**
+     * Load inflation data
+     * @returns {Promise<Object>} Inflation data
+     */
+    async function loadInflation() {
+        if (cache.inflation) {
+            return cache.inflation;
+        }
+
+        try {
+            const response = await fetch(config.inflationPath);
+            if (!response.ok) {
+                throw new Error(`Failed to load inflation data: ${response.status}`);
+            }
+            cache.inflation = await response.json();
+            return cache.inflation;
+        } catch (error) {
+            console.error('Error loading inflation data:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Adjust a price for inflation (convert to end year's terms)
+     * @param {number} price - Nominal price
+     * @param {number} fromYear - Year the price is from
+     * @param {number} toYear - Year to adjust to
+     * @returns {number} Real price in toYear's terms
+     */
+    function adjustForInflation(price, fromYear, toYear) {
+        if (!cache.inflation || !cache.inflation.data) {
+            return price; // Return nominal if no inflation data
+        }
+
+        const fromCPI = cache.inflation.data[fromYear];
+        const toCPI = cache.inflation.data[toYear];
+
+        if (!fromCPI || !toCPI) {
+            return price;
+        }
+
+        return price * (toCPI / fromCPI);
     }
 
     /**
@@ -197,9 +243,10 @@ const DataLoader = (function() {
      * @param {number} startYear - Starting year
      * @param {number} endYear - Ending year
      * @param {string} propertyType - Property type code
+     * @param {boolean} adjustInflation - Whether to adjust for inflation
      * @returns {Object|null} Change data or null if insufficient data
      */
-    function getPriceChange(sectorId, startYear, endYear, propertyType) {
+    function getPriceChange(sectorId, startYear, endYear, propertyType, adjustInflation = false) {
         const startStats = getPriceStats(sectorId, startYear, propertyType);
         const endStats = getPriceStats(sectorId, endYear, propertyType);
 
@@ -207,16 +254,34 @@ const DataLoader = (function() {
             return null;
         }
 
-        const changeAmount = endStats.avg - startStats.avg;
-        const changePercent = (changeAmount / startStats.avg) * 100;
+        // Get nominal prices
+        const nominalStartPrice = startStats.avg;
+        const nominalEndPrice = endStats.avg;
+
+        // Calculate prices to use (adjusted or nominal)
+        let startPrice, endPrice;
+        if (adjustInflation) {
+            // Adjust start price to end year's terms
+            startPrice = adjustForInflation(nominalStartPrice, startYear, endYear);
+            endPrice = nominalEndPrice;
+        } else {
+            startPrice = nominalStartPrice;
+            endPrice = nominalEndPrice;
+        }
+
+        const changeAmount = endPrice - startPrice;
+        const changePercent = (changeAmount / startPrice) * 100;
 
         return {
-            startPrice: startStats.avg,
-            endPrice: endStats.avg,
+            startPrice: startPrice,
+            endPrice: endPrice,
+            nominalStartPrice: nominalStartPrice,
+            nominalEndPrice: nominalEndPrice,
             changeAmount: changeAmount,
             changePercent: changePercent,
             startCount: startStats.count,
-            endCount: endStats.count
+            endCount: endStats.count,
+            adjustedForInflation: adjustInflation
         };
     }
 
@@ -226,9 +291,10 @@ const DataLoader = (function() {
      * @param {number} startYear - Starting year
      * @param {number} endYear - Ending year
      * @param {string} propertyType - Property type code
+     * @param {boolean} adjustInflation - Whether to adjust for inflation
      * @returns {number[]} Array of percentage changes
      */
-    function getAllPriceChanges(startYear, endYear, propertyType) {
+    function getAllPriceChanges(startYear, endYear, propertyType, adjustInflation = false) {
         const startData = cache.prices[startYear];
         const endData = cache.prices[endYear];
 
@@ -245,7 +311,7 @@ const DataLoader = (function() {
         ]);
 
         for (const sectorId of sectorIds) {
-            const change = getPriceChange(sectorId, startYear, endYear, propertyType);
+            const change = getPriceChange(sectorId, startYear, endYear, propertyType, adjustInflation);
             if (change) {
                 changes.push(change.changePercent);
             }
@@ -259,10 +325,11 @@ const DataLoader = (function() {
      * @param {number} startYear - Starting year
      * @param {number} endYear - Ending year
      * @param {string} propertyType - Property type code
+     * @param {boolean} adjustInflation - Whether to adjust for inflation
      * @returns {Object} { min, max } or null if no data
      */
-    function getChangeRange(startYear, endYear, propertyType) {
-        const changes = getAllPriceChanges(startYear, endYear, propertyType);
+    function getChangeRange(startYear, endYear, propertyType, adjustInflation = false) {
+        const changes = getAllPriceChanges(startYear, endYear, propertyType, adjustInflation);
         if (changes.length === 0) {
             return null;
         }
@@ -322,6 +389,7 @@ const DataLoader = (function() {
     return {
         loadBoundaries,
         loadPriceData,
+        loadInflation,
         preloadYears,
         getPriceStats,
         getAllPrices,
@@ -329,6 +397,7 @@ const DataLoader = (function() {
         getPriceChange,
         getAllPriceChanges,
         getChangeRange,
+        adjustForInflation,
         isYearLoaded,
         areBoundariesLoaded,
         getAvailableYears,

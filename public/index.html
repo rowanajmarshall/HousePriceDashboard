@@ -10,9 +10,9 @@
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin="">
 
-    <!-- Application CSS (v4 - cache bust) -->
-    <link rel="stylesheet" href="css/main.css?v=4">
-    <link rel="stylesheet" href="css/map.css?v=4">
+    <!-- Application CSS (v5 - cache bust) -->
+    <link rel="stylesheet" href="css/main.css?v=5">
+    <link rel="stylesheet" href="css/map.css?v=5">
 </head>
 <body>
     <div class="app-container">
@@ -134,6 +134,21 @@
                         </div>
                     </div>
 
+                    <!-- Adjustment Mode -->
+                    <div class="filter-group">
+                        <label class="filter-label">Adjustment</label>
+                        <div class="radio-group radio-group-horizontal" id="adjustment-mode-filter">
+                            <label class="radio-option">
+                                <input type="radio" name="adjustment-mode" value="nominal" checked>
+                                <span class="radio-label">Nominal</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="adjustment-mode" value="real">
+                                <span class="radio-label">Real</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Change Legend -->
                     <div class="legend" id="change-legend">
                         <label class="filter-label">Price Change</label>
@@ -191,14 +206,14 @@
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
 
-    <!-- Application JS (v4 - cache bust) -->
-    <script src="js/data-loader.js?v=4"></script>
-    <script src="js/map.js?v=4"></script>
-    <script src="js/heatmap.js?v=4"></script>
-    <script src="js/filters.js?v=4"></script>
-    <script src="js/tabs.js?v=4"></script>
-    <script src="js/tooltip.js?v=4"></script>
-    <script src="js/main.js?v=4"></script>
+    <!-- Application JS (v5 - cache bust) -->
+    <script src="js/data-loader.js?v=5"></script>
+    <script src="js/map.js?v=5"></script>
+    <script src="js/heatmap.js?v=5"></script>
+    <script src="js/filters.js?v=5"></script>
+    <script src="js/tabs.js?v=5"></script>
+    <script src="js/tooltip.js?v=5"></script>
+    <script src="js/main.js?v=5"></script>
     <!-- 100% privacy-first analytics -->
 <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
 </body>

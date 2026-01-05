@@ -13,7 +13,8 @@ const FiltersModule = (function() {
     let changeState = {
         propertyType: 'A',
         startYear: 2014,
-        endYear: new Date().getFullYear()
+        endYear: new Date().getFullYear(),
+        adjustmentMode: 'nominal' // 'nominal' or 'real'
     };
 
     // Callback for filter changes
@@ -68,6 +69,7 @@ const FiltersModule = (function() {
         // Initialize change view controls
         initChangePropertyTypeFilter();
         initChangeYearSliders(minYear, maxYear);
+        initAdjustmentModeFilter();
     }
 
     /**
@@ -233,6 +235,30 @@ const FiltersModule = (function() {
     }
 
     /**
+     * Initialize adjustment mode radio buttons
+     */
+    function initAdjustmentModeFilter() {
+        const container = document.getElementById('adjustment-mode-filter');
+        if (!container) return;
+
+        const radios = container.querySelectorAll('input[type="radio"]');
+        radios.forEach(radio => {
+            // Set initial checked state
+            if (radio.value === changeState.adjustmentMode) {
+                radio.checked = true;
+            }
+
+            // Add change listener
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    changeState.adjustmentMode = this.value;
+                    triggerChangeViewCallback('adjustmentMode');
+                }
+            });
+        });
+    }
+
+    /**
      * Trigger callback for change view updates
      * @param {string} changedField
      */
@@ -315,7 +341,8 @@ const FiltersModule = (function() {
     function disable() {
         const controls = document.querySelectorAll(
             '#property-type-filter input, #year-slider, ' +
-            '#change-property-type-filter input, #start-year-slider, #end-year-slider'
+            '#change-property-type-filter input, #start-year-slider, #end-year-slider, ' +
+            '#adjustment-mode-filter input'
         );
         controls.forEach(el => el.disabled = true);
     }
@@ -326,7 +353,8 @@ const FiltersModule = (function() {
     function enable() {
         const controls = document.querySelectorAll(
             '#property-type-filter input, #year-slider, ' +
-            '#change-property-type-filter input, #start-year-slider, #end-year-slider'
+            '#change-property-type-filter input, #start-year-slider, #end-year-slider, ' +
+            '#adjustment-mode-filter input'
         );
         controls.forEach(el => el.disabled = false);
     }

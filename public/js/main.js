@@ -20,6 +20,51 @@
     };
 
     /**
+     * Initialize mobile controls collapse functionality
+     */
+    function initMobileCollapse() {
+        const panel = document.querySelector('.controls-panel');
+        const toggle = document.querySelector('.collapse-toggle');
+
+        if (!toggle || !panel) return;
+
+        // Restore state from localStorage
+        const isCollapsed = localStorage.getItem('controlsCollapsed') === 'true';
+        if (isCollapsed) {
+            panel.classList.add('collapsed');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+
+        toggle.addEventListener('click', () => {
+            panel.classList.toggle('collapsed');
+            const expanded = !panel.classList.contains('collapsed');
+            toggle.setAttribute('aria-expanded', String(expanded));
+            localStorage.setItem('controlsCollapsed', String(!expanded));
+        });
+    }
+
+    /**
+     * Update the mobile controls summary text
+     */
+    function updateControlsSummary() {
+        const summary = document.querySelector('.controls-summary');
+        if (!summary) return;
+
+        // Check if HeatmapModule is initialized
+        if (typeof HeatmapModule === 'undefined' || !HeatmapModule.getViewMode) return;
+
+        const viewMode = HeatmapModule.getViewMode();
+        if (viewMode === 'change') {
+            const state = FiltersModule.getChangeState();
+            const mode = state.adjustmentMode === 'real' ? 'Real' : 'Nominal';
+            summary.textContent = `${mode} • ${state.startYear}-${state.endYear}`;
+        } else {
+            const state = FiltersModule.getState();
+            summary.textContent = `Price • ${state.year}`;
+        }
+    }
+
+    /**
      * Initialize the application
      */
     async function init() {
@@ -27,6 +72,9 @@
 
         try {
             showLoading(true);
+
+            // Initialize mobile collapse (before async operations)
+            initMobileCollapse();
 
             // Initialize the map
             const map = MapModule.init('map');
@@ -80,6 +128,9 @@
             app.loading = false;
             showLoading(false);
 
+            // Update mobile summary
+            updateControlsSummary();
+
             console.log('Application ready');
 
         } catch (error) {
@@ -113,6 +164,9 @@
             // Re-enable filters
             FiltersModule.enable();
             showLoading(false);
+
+            // Update mobile summary
+            updateControlsSummary();
 
             // Preload adjacent years if year changed
             if (event.type === 'year') {
@@ -154,6 +208,9 @@
             FiltersModule.enable();
             showLoading(false);
 
+            // Update mobile summary
+            updateControlsSummary();
+
         } catch (error) {
             console.error('Failed to update change view:', error);
             FiltersModule.enable();
@@ -191,6 +248,9 @@
 
             FiltersModule.enable();
             showLoading(false);
+
+            // Update mobile summary
+            updateControlsSummary();
 
         } catch (error) {
             console.error('Failed to switch tab:', error);

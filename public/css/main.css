@@ -436,6 +436,11 @@ html, body {
     }
 }
 
+/* Mobile Controls Header - hidden on desktop */
+.mobile-controls-header {
+    display: none;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     :root {
@@ -457,13 +462,63 @@ html, body {
 
     .controls-panel {
         width: 100%;
+        flex-direction: column;
+        gap: 0;
+        padding: 0;
+        border-right: none;
+        border-bottom: 1px solid var(--color-border);
+        overflow-y: visible;
+    }
+
+    /* Mobile controls header */
+    .mobile-controls-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--spacing-sm) var(--spacing-md);
+        background: var(--color-primary);
+        color: white;
+    }
+
+    .collapse-toggle {
+        background: none;
+        border: none;
+        color: white;
+        font-weight: 600;
+        font-size: var(--font-size-base);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-xs) 0;
+    }
+
+    .collapse-icon {
+        display: inline-block;
+        transition: transform 0.2s ease;
+    }
+
+    .controls-summary {
+        font-size: var(--font-size-sm);
+        opacity: 0.9;
+    }
+
+    /* Collapsible content */
+    .controls-content {
+        display: flex;
         flex-direction: row;
         flex-wrap: wrap;
         gap: var(--spacing-md);
         padding: var(--spacing-md);
-        border-right: none;
-        border-bottom: 1px solid var(--color-border);
-        overflow-y: visible;
+    }
+
+    /* Collapsed state */
+    .controls-panel.collapsed .controls-content {
+        display: none;
+    }
+
+    .controls-panel.collapsed .collapse-icon {
+        transform: rotate(180deg);
     }
 
     .filter-group {

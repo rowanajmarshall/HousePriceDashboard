@@ -25,6 +25,7 @@
     function initMobileCollapse() {
         const panel = document.querySelector('.controls-panel');
         const toggle = document.querySelector('.collapse-toggle');
+        const handleLabel = document.querySelector('.handle-label');
 
         if (!toggle || !panel) return;
 
@@ -33,6 +34,9 @@
         if (isCollapsed) {
             panel.classList.add('collapsed');
             toggle.setAttribute('aria-expanded', 'false');
+            if (handleLabel) {
+                handleLabel.textContent = 'Show Filters';
+            }
         }
 
         toggle.addEventListener('click', () => {
@@ -40,6 +44,11 @@
             const expanded = !panel.classList.contains('collapsed');
             toggle.setAttribute('aria-expanded', String(expanded));
             localStorage.setItem('controlsCollapsed', String(!expanded));
+
+            // Update handle label
+            if (handleLabel) {
+                handleLabel.textContent = expanded ? 'Hide Filters' : 'Show Filters';
+            }
         });
     }
 

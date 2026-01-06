@@ -436,8 +436,8 @@ html, body {
     }
 }
 
-/* Mobile Controls Header - hidden on desktop */
-.mobile-controls-header {
+/* Mobile Controls Handle - hidden on desktop */
+.mobile-controls-handle {
     display: none;
 }
 
@@ -470,39 +470,6 @@ html, body {
         overflow-y: visible;
     }
 
-    /* Mobile controls header */
-    .mobile-controls-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--spacing-sm) var(--spacing-md);
-        background: var(--color-primary);
-        color: white;
-    }
-
-    .collapse-toggle {
-        background: none;
-        border: none;
-        color: white;
-        font-weight: 600;
-        font-size: var(--font-size-base);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-xs) 0;
-    }
-
-    .collapse-icon {
-        display: inline-block;
-        transition: transform 0.2s ease;
-    }
-
-    .controls-summary {
-        font-size: var(--font-size-sm);
-        opacity: 0.9;
-    }
-
     /* Collapsible content */
     .controls-content {
         display: flex;
@@ -510,6 +477,51 @@ html, body {
         flex-wrap: wrap;
         gap: var(--spacing-md);
         padding: var(--spacing-md);
+    }
+
+    /* Mobile controls handle (bottom drawer) */
+    .mobile-controls-handle {
+        display: block;
+        background: var(--color-primary);
+    }
+
+    .collapse-toggle {
+        width: 100%;
+        background: none;
+        border: none;
+        color: white;
+        font-weight: 600;
+        font-size: var(--font-size-sm);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .collapse-icon {
+        display: inline-block;
+        font-size: 10px;
+        transition: transform 0.2s ease;
+    }
+
+    .controls-summary {
+        opacity: 0.9;
+        margin-left: var(--spacing-sm);
+    }
+
+    /* Hide summary when expanded, show when collapsed */
+    .controls-summary {
+        display: none;
+    }
+
+    .controls-panel.collapsed .controls-summary {
+        display: inline;
+    }
+
+    .controls-panel.collapsed .handle-label {
+        display: none;
     }
 
     /* Collapsed state */

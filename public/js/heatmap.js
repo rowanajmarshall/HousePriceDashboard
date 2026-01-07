@@ -119,9 +119,9 @@ const HeatmapModule = (function() {
         return {
             fillColor: fillColor,
             fillOpacity: fillOpacity,
-            color: fillColor,  // Match stroke to fill to eliminate seam artifacts
-            weight: 1,
-            opacity: 1
+            color: '#333333',
+            weight: 1.5,
+            opacity: 0.6
         };
     }
 
@@ -263,9 +263,9 @@ const HeatmapModule = (function() {
         return {
             fillColor: fillColor,
             fillOpacity: fillOpacity,
-            color: fillColor,
-            weight: 1,
-            opacity: 1
+            color: '#333333',
+            weight: 1.5,
+            opacity: 0.6
         };
     }
 

@@ -2,6 +2,7 @@
 # /// script
 # requires-python = ">=3.9"
 # dependencies = [
+#     "numpy>=1.24.0",
 #     "pandas>=2.0.0",
 #     "tqdm>=4.65.0",
 # ]
@@ -22,6 +23,7 @@ Usage:
 
 import os
 import json
+import numpy as np
 import pandas as pd
 from datetime import datetime
 from tqdm import tqdm
@@ -117,9 +119,12 @@ def process_data():
         chunksize=chunk_size
     )
 
-    # Aggregate data by sector, year, and property type
+    # Store raw prices by sector, year, and property type
+    # Structure: prices_by_type[year][district_id][prop_type] = [prices...]
+    # Also store all prices for "All" type: all_prices[year][district_id] = [prices...]
     print("Processing data...")
-    aggregated = {}
+    prices_by_type = {}
+    all_prices = {}
 
     total_rows = 0
     valid_rows = 0
@@ -141,74 +146,57 @@ def process_data():
         chunk = chunk.dropna(subset=['district_id'])
         valid_rows += len(chunk)
 
-        # Group and aggregate
+        # Collect prices using groupby for efficiency
         for (district_id, year, prop_type), group in chunk.groupby(['district_id', 'year', 'property_type']):
             year = int(year)
+            prices_list = group['price'].tolist()
 
-            if year not in aggregated:
-                aggregated[year] = {}
+            # Initialize nested dicts as needed
+            if year not in prices_by_type:
+                prices_by_type[year] = {}
+                all_prices[year] = {}
 
-            if district_id not in aggregated[year]:
-                aggregated[year][district_id] = {}
+            if district_id not in prices_by_type[year]:
+                prices_by_type[year][district_id] = {}
+                all_prices[year][district_id] = []
 
-            prices = group['price'].values
+            if prop_type not in prices_by_type[year][district_id]:
+                prices_by_type[year][district_id][prop_type] = []
 
-            # Calculate statistics
-            avg = int(round(prices.mean()))
-            median = int(round(pd.Series(prices).median()))
-            count = len(prices)
-
-            # Store or update statistics
-            if prop_type in aggregated[year][district_id]:
-                # Merge with existing data (for chunked processing)
-                existing = aggregated[year][district_id][prop_type]
-                total_count = existing['count'] + count
-                # Weighted average (approximation)
-                new_avg = int(round((existing['avg'] * existing['count'] + avg * count) / total_count))
-                aggregated[year][district_id][prop_type] = {
-                    'avg': new_avg,
-                    'median': median,  # Take latest median (not perfect but acceptable)
-                    'count': total_count
-                }
-            else:
-                aggregated[year][district_id][prop_type] = {
-                    'avg': avg,
-                    'median': median,
-                    'count': count
-                }
+            # Store the prices
+            prices_by_type[year][district_id][prop_type].extend(prices_list)
+            all_prices[year][district_id].extend(prices_list)
 
     print(f"\nProcessed {total_rows:,} total rows")
     print(f"Valid rows: {valid_rows:,}")
-    print(f"Years covered: {min(aggregated.keys())} - {max(aggregated.keys())}")
+    print(f"Years covered: {min(prices_by_type.keys())} - {max(prices_by_type.keys())}")
 
-    # Compute "All" property type aggregate for each district/year
-    print("\nComputing 'All' property type aggregates...")
-    for year in aggregated:
-        for district_id in aggregated[year]:
-            district_data = aggregated[year][district_id]
+    # Compute statistics from collected prices
+    print("\nComputing statistics...")
+    aggregated = {}
 
-            # Collect all prices across property types
-            total_count = 0
-            weighted_avg_sum = 0
-            all_medians = []
+    for year in tqdm(prices_by_type, desc="Computing stats"):
+        aggregated[year] = {}
 
-            for prop_type in VALID_PROPERTY_TYPES:
-                if prop_type in district_data:
-                    stats = district_data[prop_type]
-                    total_count += stats['count']
-                    weighted_avg_sum += stats['avg'] * stats['count']
-                    all_medians.append(stats['median'])
+        for district_id in prices_by_type[year]:
+            aggregated[year][district_id] = {}
 
-            if total_count > 0:
-                # Calculate combined statistics
-                combined_avg = int(round(weighted_avg_sum / total_count))
-                # Use average of medians as approximation (true median would need raw data)
-                combined_median = int(round(sum(all_medians) / len(all_medians)))
+            # Stats for each property type
+            for prop_type in prices_by_type[year][district_id]:
+                prices = np.array(prices_by_type[year][district_id][prop_type])
+                aggregated[year][district_id][prop_type] = {
+                    'avg': int(round(np.mean(prices))),
+                    'median': int(round(np.median(prices))),
+                    'count': len(prices)
+                }
 
-                district_data[ALL_PROPERTY_TYPE] = {
-                    'avg': combined_avg,
-                    'median': combined_median,
-                    'count': total_count
+            # Stats for "All" property types (true median from all prices)
+            prices = np.array(all_prices[year][district_id])
+            if len(prices) > 0:
+                aggregated[year][district_id][ALL_PROPERTY_TYPE] = {
+                    'avg': int(round(np.mean(prices))),
+                    'median': int(round(np.median(prices))),
+                    'count': len(prices)
                 }
 
     # Create output directory

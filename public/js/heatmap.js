@@ -427,6 +427,46 @@ const HeatmapModule = (function() {
     }
 
     /**
+     * Find a postcode sector and zoom to it
+     * @param {string} searchTerm - Postcode or postcode prefix to search for
+     * @returns {boolean} True if found and zoomed, false otherwise
+     */
+    function findAndZoomToSector(searchTerm) {
+        if (!geoJsonLayer || !searchTerm) {
+            return false;
+        }
+
+        // Normalize: remove spaces, uppercase
+        const normalized = searchTerm.replace(/\s+/g, '').toUpperCase();
+
+        // Extract postcode district (outward code)
+        // UK postcodes: 1-2 letters + 1-2 digits + optional letter
+        // Examples: SW1A, M1, EC1A, W1, SE1
+        const districtMatch = normalized.match(/^([A-Z]{1,2}[0-9][0-9A-Z]?)/);
+        if (!districtMatch) {
+            return false;
+        }
+
+        const districtId = districtMatch[1];
+
+        // Search GeoJSON layer for matching feature
+        let foundLayer = null;
+        geoJsonLayer.eachLayer(function(layer) {
+            if (layer.feature.properties.id === districtId) {
+                foundLayer = layer;
+            }
+        });
+
+        if (foundLayer) {
+            // Zoom to feature bounds
+            MapModule.fitBounds(foundLayer.getBounds());
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Destroy the heatmap layer
      */
     function destroy() {
@@ -452,6 +492,7 @@ const HeatmapModule = (function() {
         getPriceRange,
         getViewMode,
         getState,
+        findAndZoomToSector,
         destroy
     };
 })();

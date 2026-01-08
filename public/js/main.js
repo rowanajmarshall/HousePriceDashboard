@@ -20,6 +20,50 @@
     };
 
     /**
+     * Initialize postcode search functionality
+     */
+    function initSearch() {
+        const searchInput = document.getElementById('postcode-search');
+        const searchBtn = document.getElementById('search-btn');
+        const searchBox = document.querySelector('.search-box');
+
+        if (!searchInput || !searchBtn) return;
+
+        function performSearch() {
+            const term = searchInput.value.trim();
+            if (!term) return;
+
+            const found = HeatmapModule.findAndZoomToSector(term);
+
+            // Show feedback
+            if (found) {
+                searchBox.classList.remove('error');
+                searchInput.blur();
+            } else {
+                searchBox.classList.add('error');
+                // Remove error class after a moment
+                setTimeout(() => searchBox.classList.remove('error'), 1500);
+            }
+        }
+
+        // Search on Enter key
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                performSearch();
+            }
+        });
+
+        // Search on button click
+        searchBtn.addEventListener('click', performSearch);
+
+        // Clear error state on input
+        searchInput.addEventListener('input', function() {
+            searchBox.classList.remove('error');
+        });
+    }
+
+    /**
      * Initialize mobile controls collapse functionality
      */
     function initMobileCollapse() {
@@ -128,6 +172,10 @@
                 config.defaultPropertyType
             );
             console.log('Heatmap initialized');
+
+            // Initialize search (after heatmap so layer is available)
+            initSearch();
+            console.log('Search initialized');
 
             // Preload adjacent years in background
             preloadAdjacentYears(config.defaultYear);

@@ -11,15 +11,28 @@
           crossorigin="">
 
     <!-- Application CSS (v14 - cache bust) -->
-    <link rel="stylesheet" href="css/main.css?v=14">
-    <link rel="stylesheet" href="css/map.css?v=14">
+    <link rel="stylesheet" href="css/main.css?v=17">
+    <link rel="stylesheet" href="css/map.css?v=17">
 </head>
 <body>
     <div class="app-container">
         <!-- Header -->
         <header class="header">
-            <h1>UK House Price Heatmap</h1>
-            <p class="subtitle">Explore 25+ years of property prices across the UK</p>
+            <div class="header-content">
+                <div class="header-titles">
+                    <h1>UK House Price Heatmap</h1>
+                    <p class="subtitle">Explore 25+ years of property prices across the UK</p>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="postcode-search" placeholder="Search postcode..." aria-label="Search postcode">
+                    <button id="search-btn" type="button" aria-label="Search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21l-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </header>
 
         <!-- Main Content -->
@@ -219,13 +232,13 @@
             crossorigin=""></script>
 
     <!-- Application JS (v14 - cache bust) -->
-    <script src="js/data-loader.js?v=14"></script>
-    <script src="js/map.js?v=14"></script>
-    <script src="js/heatmap.js?v=14"></script>
-    <script src="js/filters.js?v=14"></script>
-    <script src="js/tabs.js?v=14"></script>
-    <script src="js/tooltip.js?v=14"></script>
-    <script src="js/main.js?v=14"></script>
+    <script src="js/data-loader.js?v=17"></script>
+    <script src="js/map.js?v=17"></script>
+    <script src="js/heatmap.js?v=17"></script>
+    <script src="js/filters.js?v=17"></script>
+    <script src="js/tabs.js?v=17"></script>
+    <script src="js/tooltip.js?v=17"></script>
+    <script src="js/main.js?v=17"></script>
     <!-- 100% privacy-first analytics -->
 <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
 </body>

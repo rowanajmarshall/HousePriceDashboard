@@ -465,6 +465,23 @@ html, body {
     font-style: italic;
 }
 
+.tooltip-footer {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+    font-size: var(--font-size-sm);
+}
+
+.tooltip-footer a {
+    color: var(--color-text-light);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.tooltip-footer a:hover {
+    color: var(--color-accent);
+}
+
 /* Loading Overlay */
 .loading-overlay {
     position: absolute;

@@ -131,6 +131,10 @@ const HeatmapModule = (function() {
     function onEachFeature(feature, layer) {
         layer.on({
             click: function(e) {
+                // Update URL hash with sector ID
+                const sectorId = feature.properties.id;
+                window.history.pushState({ postcode: sectorId }, '', '#' + sectorId);
+
                 // Emit custom event for tooltip handling
                 const event = new CustomEvent('sectorClick', {
                     detail: {
@@ -460,6 +464,17 @@ const HeatmapModule = (function() {
         if (foundLayer) {
             // Zoom to feature bounds
             MapModule.fitBounds(foundLayer.getBounds());
+
+            // Trigger tooltip to open at center of the feature
+            const center = foundLayer.getBounds().getCenter();
+            const event = new CustomEvent('sectorClick', {
+                detail: {
+                    feature: foundLayer.feature,
+                    latlng: center
+                }
+            });
+            document.dispatchEvent(event);
+
             return true;
         }
 

@@ -20,6 +20,41 @@
     };
 
     /**
+     * Get postcode from URL hash (e.g., #N19)
+     */
+    function getPostcodeFromUrl() {
+        const hash = window.location.hash;
+        if (hash && hash.length > 1) {
+            return decodeURIComponent(hash.slice(1));
+        }
+        return null;
+    }
+
+    /**
+     * Update URL hash with postcode
+     */
+    function updateUrlWithPostcode(postcode) {
+        window.history.pushState({ postcode }, '', '#' + encodeURIComponent(postcode.toUpperCase()));
+    }
+
+    /**
+     * Navigate to postcode from URL on page load
+     */
+    function handleUrlPostcode() {
+        const postcode = getPostcodeFromUrl();
+        if (postcode) {
+            const found = HeatmapModule.findAndZoomToSector(postcode);
+            if (found) {
+                // Update search input to show the postcode
+                const searchInput = document.getElementById('postcode-search');
+                if (searchInput) {
+                    searchInput.value = postcode.toUpperCase();
+                }
+            }
+        }
+    }
+
+    /**
      * Initialize postcode search functionality
      */
     function initSearch() {
@@ -39,6 +74,7 @@
             if (found) {
                 searchBox.classList.remove('error');
                 searchInput.blur();
+                updateUrlWithPostcode(term);
             } else {
                 searchBox.classList.add('error');
                 // Remove error class after a moment
@@ -60,6 +96,14 @@
         // Clear error state on input
         searchInput.addEventListener('input', function() {
             searchBox.classList.remove('error');
+        });
+
+        // Handle browser back/forward navigation
+        window.addEventListener('popstate', function(e) {
+            if (e.state && e.state.postcode) {
+                HeatmapModule.findAndZoomToSector(e.state.postcode);
+                searchInput.value = e.state.postcode.toUpperCase();
+            }
         });
     }
 
@@ -176,6 +220,9 @@
             // Initialize search (after heatmap so layer is available)
             initSearch();
             console.log('Search initialized');
+
+            // Check for postcode in URL and navigate to it
+            handleUrlPostcode();
 
             // Preload adjacent years in background
             preloadAdjacentYears(config.defaultYear);

@@ -9,6 +9,12 @@ const TooltipModule = (function() {
     // Reference to map container for positioning
     let mapContainer = null;
 
+    // Store current sector color for screenshots
+    let currentSectorColor = '#3498db';
+
+    // Store current sector geometry for screenshots
+    let currentSectorGeometry = null;
+
     /**
      * Initialize the tooltip module
      * @param {HTMLElement} container - Map container element
@@ -42,7 +48,11 @@ const TooltipModule = (function() {
      * @param {CustomEvent} e
      */
     function handleSectorClick(e) {
-        const { feature, latlng } = e.detail;
+        const { feature, latlng, color } = e.detail;
+
+        // Store the color and geometry for screenshots
+        currentSectorColor = color || '#3498db';
+        currentSectorGeometry = feature.geometry;
 
         // Get sector info
         const sectorId = feature.properties.id;
@@ -112,6 +122,15 @@ const TooltipModule = (function() {
             closeBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 close();
+            });
+        }
+
+        // Add screenshot button handler
+        const screenshotBtn = tooltip.querySelector('.screenshot-btn');
+        if (screenshotBtn) {
+            screenshotBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                takeScreenshot(sectorCode);
             });
         }
 
@@ -220,6 +239,15 @@ const TooltipModule = (function() {
             });
         }
 
+        // Add screenshot button handler
+        const screenshotBtn = tooltip.querySelector('.screenshot-btn');
+        if (screenshotBtn) {
+            screenshotBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                takeScreenshot(sectorCode);
+            });
+        }
+
         // Add to DOM
         document.body.appendChild(tooltip);
         activeTooltip = tooltip;
@@ -276,6 +304,239 @@ const TooltipModule = (function() {
         tooltip.style.position = 'fixed';
         tooltip.style.left = `${left}px`;
         tooltip.style.top = `${top}px`;
+    }
+
+    /**
+     * Draw a polygon outline on canvas from GeoJSON geometry
+     * @param {CanvasRenderingContext2D} ctx - Canvas context
+     * @param {Object} geometry - GeoJSON geometry object
+     * @param {number} x - Center X position
+     * @param {number} y - Center Y position
+     * @param {number} size - Size to fit the polygon in
+     */
+    function drawPolygonOutline(ctx, geometry, x, y, size) {
+        // Get coordinates (handle both Polygon and MultiPolygon)
+        let rings;
+        if (geometry.type === 'Polygon') {
+            rings = geometry.coordinates;
+        } else if (geometry.type === 'MultiPolygon') {
+            // Use the largest polygon for MultiPolygon
+            rings = geometry.coordinates.reduce((largest, current) => {
+                return current[0].length > largest[0].length ? current : largest;
+            }, geometry.coordinates[0]);
+        } else {
+            return;
+        }
+
+        const coords = rings[0]; // Outer ring
+
+        // Calculate bounding box
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
+
+        coords.forEach(([lng, lat]) => {
+            minX = Math.min(minX, lng);
+            maxX = Math.max(maxX, lng);
+            minY = Math.min(minY, lat);
+            maxY = Math.max(maxY, lat);
+        });
+
+        // Calculate scale to fit in size, maintaining aspect ratio
+        const geoWidth = maxX - minX;
+        const geoHeight = maxY - minY;
+        const scale = Math.min(size / geoWidth, size / geoHeight) * 0.9;
+
+        // Calculate center offset
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // Draw the polygon
+        ctx.beginPath();
+        coords.forEach(([lng, lat], i) => {
+            // Transform coordinates: center, scale, and flip Y (lat increases up, canvas Y increases down)
+            const px = x + (lng - centerX) * scale;
+            const py = y - (lat - centerY) * scale;
+
+            if (i === 0) {
+                ctx.moveTo(px, py);
+            } else {
+                ctx.lineTo(px, py);
+            }
+        });
+        ctx.closePath();
+
+        // Fill with semi-transparent white
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.fill();
+
+        // Stroke with white
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    /**
+     * Take a screenshot - creates a shareable card with postcode data using Canvas
+     * @param {string} sectorCode - Postcode sector code for filename
+     */
+    async function takeScreenshot(sectorCode) {
+        if (!activeTooltip) return;
+
+        const screenshotBtn = activeTooltip.querySelector('.screenshot-btn');
+        const originalText = screenshotBtn ? screenshotBtn.innerHTML : '';
+
+        try {
+            // Show loading state
+            if (screenshotBtn) {
+                screenshotBtn.innerHTML = 'Capturing...';
+                screenshotBtn.disabled = true;
+            }
+
+            // Get data from the tooltip
+            const title = activeTooltip.querySelector('.tooltip-title')?.textContent || sectorCode;
+            const subtitle = activeTooltip.querySelector('.tooltip-subtitle')?.textContent || '';
+
+            // Extract label/value pairs from tooltip content
+            const content = activeTooltip.querySelector('.tooltip-content');
+            const dataRows = [];
+
+            if (content) {
+                const rows = content.querySelectorAll('.tooltip-row');
+                rows.forEach(row => {
+                    const label = row.querySelector('.tooltip-label')?.textContent?.trim() || '';
+                    const value = row.querySelector('.tooltip-value')?.textContent?.trim() || '';
+                    if (label && value) {
+                        dataRows.push({ label, value });
+                    }
+                });
+            }
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const width = 400;
+            const headerHeight = 130;
+            const rowHeight = 40;
+            const footerHeight = 40;
+            const padding = 20;
+            const height = headerHeight + (dataRows.length * rowHeight) + padding + footerHeight;
+
+            canvas.width = width * 2; // 2x for retina
+            canvas.height = height * 2;
+            ctx.scale(2, 2);
+
+            // Draw background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw header with sector color
+            ctx.fillStyle = currentSectorColor;
+            ctx.fillRect(0, 0, width, headerHeight);
+
+            // Calculate layout: [postcode] [polygon] centered horizontally
+            const polySize = 70;
+            const gap = 15;
+
+            // Measure text width
+            ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+            const textWidth = ctx.measureText(title).width;
+
+            // Total width of the group
+            const totalWidth = textWidth + gap + polySize;
+            const startX = (width - totalWidth) / 2;
+
+            // Vertical center for the main row
+            const centerY = 55;
+
+            // Draw title (postcode)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(title, startX, centerY + 12);
+
+            // Draw polygon
+            if (currentSectorGeometry) {
+                drawPolygonOutline(ctx, currentSectorGeometry, startX + textWidth + gap + polySize / 2, centerY, polySize);
+            }
+
+            // Draw subtitle (centered below)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(subtitle, width / 2, headerHeight - 15);
+
+            // Draw data rows
+            ctx.textAlign = 'left';
+            let y = headerHeight + padding;
+
+            dataRows.forEach((row, index) => {
+                // Draw separator line (except for first row)
+                if (index > 0) {
+                    ctx.strokeStyle = '#eeeeee';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+
+                y += 28;
+
+                // Draw label (left-aligned)
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#666666';
+                ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(row.label, padding, y);
+
+                // Draw value (right-aligned)
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#333333';
+                ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillText(row.value, width - padding, y);
+
+                y += 12;
+            });
+
+            // Reset text align
+            ctx.textAlign = 'left';
+
+            // Draw footer
+            const footerY = height - footerHeight;
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(0, footerY, width, footerHeight);
+
+            ctx.fillStyle = '#888888';
+            ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('housepricedashboard.co.uk', width / 2, footerY + 25);
+
+            // Download the image
+            const link = document.createElement('a');
+            link.download = `house-prices-${sectorCode}-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            // Show success state
+            if (screenshotBtn) {
+                screenshotBtn.innerHTML = 'Done!';
+                setTimeout(() => {
+                    screenshotBtn.innerHTML = originalText;
+                    screenshotBtn.disabled = false;
+                }, 1500);
+            }
+
+        } catch (error) {
+            console.error('Screenshot failed:', error);
+
+            // Show error state
+            if (screenshotBtn) {
+                screenshotBtn.innerHTML = 'Failed';
+                setTimeout(() => {
+                    screenshotBtn.innerHTML = originalText;
+                    screenshotBtn.disabled = false;
+                }, 1500);
+            }
+        }
     }
 
     /**

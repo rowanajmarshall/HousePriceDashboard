@@ -135,12 +135,16 @@ const HeatmapModule = (function() {
                 const sectorId = feature.properties.id;
                 window.history.pushState({ postcode: sectorId }, '', '#' + sectorId);
 
+                // Get the current fill color of this polygon
+                const fillColor = e.target.options.fillColor || '#3498db';
+
                 // Emit custom event for tooltip handling
                 const event = new CustomEvent('sectorClick', {
                     detail: {
                         feature: feature,
                         latlng: e.latlng,
-                        layer: layer
+                        layer: layer,
+                        color: fillColor
                     }
                 });
                 document.dispatchEvent(event);
@@ -465,12 +469,16 @@ const HeatmapModule = (function() {
             // Zoom to feature bounds
             MapModule.fitBounds(foundLayer.getBounds());
 
+            // Get the current fill color of this polygon
+            const fillColor = foundLayer.options.fillColor || '#3498db';
+
             // Trigger tooltip to open at center of the feature
             const center = foundLayer.getBounds().getCenter();
             const event = new CustomEvent('sectorClick', {
                 detail: {
                     feature: foundLayer.feature,
-                    latlng: center
+                    latlng: center,
+                    color: fillColor
                 }
             });
             document.dispatchEvent(event);

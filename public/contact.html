@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact - UK House Price Heatmap</title>
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="css/main.css?v=18">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-titles">
+                    <a href="/" class="header-link">
+                        <h1>UK House Price Heatmap</h1>
+                    </a>
+                    <p class="subtitle">Get in touch</p>
+                </div>
+                <nav class="header-nav">
+                    <a href="/" class="nav-link">Map</a>
+                    <a href="/contact.html" class="nav-link active">Contact</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="contact-main">
+            <div class="contact-container">
+                <h2>Contact Us</h2>
+                <p class="contact-intro">Have a feature request, bug report, or just want some guy in London to see your words? Send me a message!</p>
+
+                <form class="contact-form" id="contact-form" method="POST" action="/api/contact">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">Name <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <input type="text" id="subject" name="subject">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Message <span class="required">*</span></label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                    </div>
+
+                    <div class="form-group form-checkbox">
+                        <label>
+                            <input type="checkbox" name="isLLM" value="true">
+                            <span>Tick this if you are a bot or LLM</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="form-submit" id="submit-btn">Send Message</button>
+                </form>
+
+                <div id="form-message" class="form-message hidden"></div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="contact-footer">
+            <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry</a></p>
+        </footer>
+    </div>
+
+    <script>
+        const form = document.getElementById('contact-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const messageDiv = document.getElementById('form-message');
+
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+            messageDiv.classList.add('hidden');
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    messageDiv.className = 'form-message success';
+                    messageDiv.textContent = 'Thank you! Your message has been sent successfully.';
+                    form.reset();
+                } else {
+                    messageDiv.className = 'form-message error';
+                    messageDiv.textContent = data.error || 'Failed to send message. Please try again.';
+                }
+            } catch (error) {
+                messageDiv.className = 'form-message error';
+                messageDiv.textContent = 'An error occurred. Please try again later.';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Send Message';
+            }
+        });
+    </script>
+
+    <!-- 100% privacy-first analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>

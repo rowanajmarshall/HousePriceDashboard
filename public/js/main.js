@@ -31,10 +31,53 @@
     }
 
     /**
-     * Update URL hash with postcode
+     * Get all state from URL query parameters
+     */
+    function getStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            tab: params.get('tab') || 'price',
+            year: parseInt(params.get('year')) || config.defaultYear,
+            propertyType: params.get('type') || config.defaultPropertyType,
+            startYear: parseInt(params.get('start')) || 2014,
+            endYear: parseInt(params.get('end')) || config.defaultYear,
+            adjustmentMode: params.get('adj') || 'nominal'
+        };
+    }
+
+    /**
+     * Update URL with current state (preserves hash)
+     */
+    function updateUrlWithState() {
+        const tab = TabsModule.getActiveTab();
+        const params = new URLSearchParams();
+
+        params.set('tab', tab);
+
+        if (tab === 'price') {
+            const state = FiltersModule.getState();
+            params.set('year', state.year);
+            params.set('type', state.propertyType);
+        } else {
+            const state = FiltersModule.getChangeState();
+            params.set('start', state.startYear);
+            params.set('end', state.endYear);
+            params.set('type', state.propertyType);
+            params.set('adj', state.adjustmentMode);
+        }
+
+        const hash = window.location.hash;
+        const newUrl = '?' + params.toString() + hash;
+        window.history.replaceState(null, '', newUrl);
+    }
+
+    /**
+     * Update URL hash with postcode (preserves query params)
      */
     function updateUrlWithPostcode(postcode) {
-        window.history.pushState({ postcode }, '', '#' + encodeURIComponent(postcode.toUpperCase()));
+        const search = window.location.search;
+        const newUrl = search + '#' + encodeURIComponent(postcode.toUpperCase());
+        window.history.pushState({ postcode }, '', newUrl);
     }
 
     /**
@@ -99,10 +142,49 @@
         });
 
         // Handle browser back/forward navigation
-        window.addEventListener('popstate', function(e) {
+        window.addEventListener('popstate', async function(e) {
+            // Handle query param state changes
+            const urlState = getStateFromUrl();
+
+            // Apply filter states
+            FiltersModule.setState({
+                propertyType: urlState.propertyType,
+                year: urlState.year
+            });
+            FiltersModule.setChangeState({
+                propertyType: urlState.propertyType,
+                startYear: urlState.startYear,
+                endYear: urlState.endYear,
+                adjustmentMode: urlState.adjustmentMode
+            });
+
+            // Switch tab and update heatmap
+            if (urlState.tab === 'change') {
+                TabsModule.switchTab('change');
+                const adjustInflation = urlState.adjustmentMode === 'real';
+                await HeatmapModule.updateChangeView(
+                    urlState.startYear,
+                    urlState.endYear,
+                    urlState.propertyType,
+                    adjustInflation
+                );
+            } else {
+                TabsModule.switchTab('price');
+                await HeatmapModule.update(urlState.year, urlState.propertyType);
+            }
+
+            updateControlsSummary();
+
+            // Handle postcode hash
             if (e.state && e.state.postcode) {
                 HeatmapModule.findAndZoomToSector(e.state.postcode);
                 searchInput.value = e.state.postcode.toUpperCase();
+            } else {
+                const postcode = getPostcodeFromUrl();
+                if (postcode) {
+                    HeatmapModule.findAndZoomToSector(postcode);
+                    searchInput.value = postcode.toUpperCase();
+                }
             }
         });
     }
@@ -199,23 +281,49 @@
             });
             console.log('Tabs initialized');
 
+            // Apply URL state to filters
+            const urlState = getStateFromUrl();
+            FiltersModule.setState({
+                propertyType: urlState.propertyType,
+                year: urlState.year
+            });
+            FiltersModule.setChangeState({
+                propertyType: urlState.propertyType,
+                startYear: urlState.startYear,
+                endYear: urlState.endYear,
+                adjustmentMode: urlState.adjustmentMode
+            });
+            console.log('URL state applied:', urlState);
+
             // Load boundaries, initial price data, and inflation data
             console.log('Loading data...');
             const [boundaries] = await Promise.all([
                 DataLoader.loadBoundaries(),
-                DataLoader.loadPriceData(config.defaultYear),
+                DataLoader.loadPriceData(urlState.year),
                 DataLoader.loadInflation()
             ]);
             console.log('Data loaded');
 
-            // Initialize heatmap
+            // Initialize heatmap with URL state
             await HeatmapModule.init(
                 map,
                 boundaries,
-                config.defaultYear,
-                config.defaultPropertyType
+                urlState.year,
+                urlState.propertyType
             );
             console.log('Heatmap initialized');
+
+            // Switch to change tab if specified in URL
+            if (urlState.tab === 'change') {
+                TabsModule.switchTab('change');
+                const adjustInflation = urlState.adjustmentMode === 'real';
+                await HeatmapModule.updateChangeView(
+                    urlState.startYear,
+                    urlState.endYear,
+                    urlState.propertyType,
+                    adjustInflation
+                );
+            }
 
             // Initialize search (after heatmap so layer is available)
             initSearch();
@@ -224,8 +332,11 @@
             // Check for postcode in URL and navigate to it
             handleUrlPostcode();
 
+            // Update URL with initial state (in case defaults were applied)
+            updateUrlWithState();
+
             // Preload adjacent years in background
-            preloadAdjacentYears(config.defaultYear);
+            preloadAdjacentYears(urlState.year);
 
             // Mark as initialized
             app.initialized = true;
@@ -272,6 +383,9 @@
             // Update mobile summary
             updateControlsSummary();
 
+            // Update URL with new state
+            updateUrlWithState();
+
             // Preload adjacent years if year changed
             if (event.type === 'year') {
                 preloadAdjacentYears(event.state.year);
@@ -315,6 +429,9 @@
             // Update mobile summary
             updateControlsSummary();
 
+            // Update URL with new state
+            updateUrlWithState();
+
         } catch (error) {
             console.error('Failed to update change view:', error);
             FiltersModule.enable();
@@ -355,6 +472,9 @@
 
             // Update mobile summary
             updateControlsSummary();
+
+            // Update URL with new state
+            updateUrlWithState();
 
         } catch (error) {
             console.error('Failed to switch tab:', error);

@@ -336,6 +336,48 @@ const FiltersModule = (function() {
     }
 
     /**
+     * Set change view filter values programmatically
+     * @param {Object} newState - New filter state
+     * @param {boolean} triggerCallback - Whether to trigger onChangeView callback
+     */
+    function setChangeState(newState, triggerCallback = false) {
+        if (newState.propertyType && newState.propertyType !== changeState.propertyType) {
+            changeState.propertyType = newState.propertyType;
+            const radio = document.querySelector(`input[name="change-property-type"][value="${changeState.propertyType}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        if (newState.startYear && newState.startYear !== changeState.startYear) {
+            changeState.startYear = newState.startYear;
+            const slider = document.getElementById('start-year-slider');
+            const display = document.getElementById('start-year-value');
+            if (slider) slider.value = changeState.startYear;
+            if (display) display.textContent = changeState.startYear;
+        }
+
+        if (newState.endYear && newState.endYear !== changeState.endYear) {
+            changeState.endYear = newState.endYear;
+            const slider = document.getElementById('end-year-slider');
+            const display = document.getElementById('end-year-value');
+            if (slider) slider.value = changeState.endYear;
+            if (display) display.textContent = changeState.endYear;
+        }
+
+        if (newState.adjustmentMode && newState.adjustmentMode !== changeState.adjustmentMode) {
+            changeState.adjustmentMode = newState.adjustmentMode;
+            const radio = document.querySelector(`input[name="adjustment-mode"][value="${changeState.adjustmentMode}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        if (triggerCallback && onChangeViewCallback) {
+            onChangeViewCallback({
+                type: 'multiple',
+                state: { ...changeState }
+            });
+        }
+    }
+
+    /**
      * Disable all filter controls
      */
     function disable() {
@@ -366,6 +408,7 @@ const FiltersModule = (function() {
         getChangeState,
         getPropertyTypeLabel,
         setState,
+        setChangeState,
         disable,
         enable
     };

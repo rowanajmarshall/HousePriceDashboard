@@ -339,7 +339,7 @@ html, body {
 }
 
 .legend-gradient.change {
-    background: linear-gradient(to right, #1e8449, #27ae60, #ffffff, #e74c3c, #c0392b);
+    background: linear-gradient(to right, #c0392b, #e74c3c, #ffffff, #27ae60, #1e8449);
 }
 
 .legend-labels {

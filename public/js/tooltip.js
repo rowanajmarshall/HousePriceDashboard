@@ -173,9 +173,9 @@ const TooltipModule = (function() {
         const content = tooltip.querySelector('.tooltip-content');
 
         if (changeData) {
-            // Format the change percentage with color (red = increase, green = decrease)
+            // Format the change percentage with color (green = increase, red = decrease)
             const changePercent = changeData.changePercent;
-            const changeColor = changePercent >= 0 ? '#c0392b' : '#27ae60';
+            const changeColor = changePercent >= 0 ? '#27ae60' : '#c0392b';
             const changeSign = changePercent >= 0 ? '+' : '';
 
             let html = '';

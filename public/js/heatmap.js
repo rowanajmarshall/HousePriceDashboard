@@ -28,11 +28,11 @@ const HeatmapModule = (function() {
         noData: '#cccccc'
     };
 
-    // Colors for change view (red = price increase, green = price decrease)
+    // Colors for change view (green = price increase, red = price decrease)
     const changeColors = {
-        decrease: { r: 30, g: 132, b: 73 },    // Dark green (prices fell)
+        decrease: { r: 192, g: 57, b: 43 },    // Dark red (prices fell)
         neutral: { r: 255, g: 255, b: 255 },   // White
-        increase: { r: 192, g: 57, b: 43 },    // Dark red (prices rose)
+        increase: { r: 30, g: 132, b: 73 },    // Dark green (prices rose)
         noData: '#cccccc'
     };
 

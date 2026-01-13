@@ -67,6 +67,8 @@ html, body {
     flex-direction: column;
     justify-content: center;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1001;
 }
 
 .header-content {

@@ -75,6 +75,7 @@
     </div>
 
     <script>
+        const API_URL = 'https://contact-me.rowanajmarshall.workers.dev';
         const form = document.getElementById('contact-form');
         const submitBtn = document.getElementById('submit-btn');
         const messageDiv = document.getElementById('form-message');
@@ -87,10 +88,35 @@
             messageDiv.classList.add('hidden');
 
             try {
-                const formData = new FormData(form);
-                const response = await fetch('/api/contact', {
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const subject = document.getElementById('subject').value || 'New Contact Form Submission';
+                const message = document.getElementById('message').value;
+                const isBot = document.querySelector('input[name="isLLM"]').checked;
+
+                const contents = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                        <h2>UK House Price Heatmap - Contact Form</h2>
+                        <p><strong>From:</strong> ${name} (${email})</p>
+                        <p><strong>Subject:</strong> ${subject}</p>
+                        <hr>
+                        <p><strong>Message:</strong></p>
+                        <p>${message.replace(/\n/g, '<br>')}</p>
+                    </div>
+                `;
+
+                const response = await fetch(API_URL, {
                     method: 'POST',
-                    body: formData,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        from: email,
+                        subject: `${subject} - from ${name}`,
+                        contents: contents,
+                        isBot: isBot
+                    })
                 });
                 const data = await response.json();
 

@@ -1,7 +1,0 @@
-{
-  "name": "house-price-dashboard",
-  "private": true,
-  "dependencies": {
-    "resend": "^4.0.0"
-  }
-}

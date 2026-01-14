@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attribution - UK House Price Heatmap</title>
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="css/main.css?v=18">
+    <style>
+        .attribution-container {
+            max-width: 700px;
+        }
+
+        .attribution-section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .attribution-section h3 {
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 2px solid var(--color-border);
+        }
+
+        .attribution-item {
+            background: var(--color-background);
+            padding: var(--spacing-md);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .attribution-item h4 {
+            color: var(--color-text);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .attribution-item p {
+            color: var(--color-text-light);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .attribution-item .license-badge {
+            display: inline-block;
+            background: var(--color-primary);
+            color: white;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            margin-top: var(--spacing-sm);
+        }
+
+        .attribution-item a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+
+        .attribution-item a:hover {
+            text-decoration: underline;
+        }
+
+        .attribution-intro {
+            color: var(--color-text-light);
+            margin-bottom: var(--spacing-lg);
+            line-height: 1.6;
+        }
+
+        blockquote {
+            background: var(--color-surface);
+            border-left: 4px solid var(--color-accent);
+            padding: var(--spacing-md);
+            margin: var(--spacing-sm) 0;
+            font-style: italic;
+            color: var(--color-text);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-titles">
+                    <a href="/" class="header-link">
+                        <h1>UK House Price Heatmap</h1>
+                    </a>
+                    <p class="subtitle">Data Attribution & Licenses</p>
+                </div>
+                <nav class="header-nav">
+                    <a href="/" class="nav-link">Map</a>
+                    <a href="/contact.html" class="nav-link">Contact</a>
+                    <a href="/attribution.html" class="nav-link active">Attributions</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="contact-main">
+            <div class="contact-container attribution-container">
+                <h2>Data Attribution</h2>
+                <p class="attribution-intro">
+                    This application uses several open data sources and libraries. We gratefully acknowledge
+                    the following sources and comply with their respective licensing requirements.
+                </p>
+
+                <div class="attribution-section">
+                    <h3>Data Sources</h3>
+
+                    <div class="attribution-item">
+                        <h4>HM Land Registry Price Paid Data</h4>
+                        <p>Property transaction prices across England and Wales from 1995 to present.</p>
+                        <blockquote>
+                            Contains HM Land Registry data &copy; Crown copyright and database right 2025.
+                            This data is licensed under the Open Government Licence v3.0.
+                        </blockquote>
+                        <p>
+                            <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">Data Source</a> |
+                            <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">License</a>
+                        </p>
+                        <span class="license-badge">OGL v3.0</span>
+                    </div>
+
+                    <div class="attribution-item">
+                        <h4>UK Postcode District Boundaries</h4>
+                        <p>Geographic boundary data for UK postcode districts.</p>
+                        <blockquote>
+                            Postcode boundary data &copy; Wikipedia contributors, licensed under
+                            Creative Commons Attribution ShareAlike 3.0 Unported (CC BY-SA 3.0).
+                        </blockquote>
+                        <p>
+                            <a href="https://github.com/missinglink/uk-postcode-polygons" target="_blank" rel="noopener">Data Source</a> |
+                            <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">License</a>
+                        </p>
+                        <span class="license-badge">CC BY-SA 3.0</span>
+                    </div>
+
+                    <div class="attribution-item">
+                        <h4>Office for National Statistics (ONS) CPI Data</h4>
+                        <p>Consumer Price Index data used for inflation adjustment calculations.</p>
+                        <blockquote>
+                            Source: Office for National Statistics licensed under the Open Government Licence v3.0.
+                        </blockquote>
+                        <p>
+                            <a href="https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries/d7bt/mm23" target="_blank" rel="noopener">Data Source (Series D7BT)</a> |
+                            <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" target="_blank" rel="noopener">License</a>
+                        </p>
+                        <span class="license-badge">OGL v3.0</span>
+                    </div>
+
+                    <div class="attribution-item">
+                        <h4>OpenStreetMap</h4>
+                        <p>Map tiles and geographic base layer.</p>
+                        <blockquote>
+                            &copy; OpenStreetMap contributors. Map data available under the
+                            Open Data Commons Open Database License (ODbL).
+                        </blockquote>
+                        <p>
+                            <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a> |
+                            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Copyright</a> |
+                            <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">License</a>
+                        </p>
+                        <span class="license-badge">ODbL</span>
+                    </div>
+                </div>
+
+                <div class="attribution-section">
+                    <h3>Software Libraries</h3>
+
+                    <div class="attribution-item">
+                        <h4>Leaflet</h4>
+                        <p>Open-source JavaScript library for interactive maps.</p>
+                        <p>
+                            <a href="https://leafletjs.com/" target="_blank" rel="noopener">Website</a> |
+                            <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" target="_blank" rel="noopener">License (BSD-2-Clause)</a>
+                        </p>
+                        <span class="license-badge">BSD-2-Clause</span>
+                    </div>
+                </div>
+
+                <div class="attribution-section">
+                    <h3>License Summary</h3>
+                    <div class="attribution-item">
+                        <p><strong>Open Government Licence v3.0 (OGL)</strong><br>
+                        Permits free use, adaptation, and redistribution for commercial and non-commercial purposes,
+                        with attribution to the source.</p>
+
+                        <p><strong>Creative Commons Attribution ShareAlike 3.0 (CC BY-SA 3.0)</strong><br>
+                        Permits sharing and adaptation with attribution. Derivative works must be distributed
+                        under the same or compatible license.</p>
+
+                        <p><strong>Open Database License (ODbL)</strong><br>
+                        Permits free use, sharing, and modification of the database. Derivative databases
+                        must remain open and attribution must be provided.</p>
+
+                        <p><strong>BSD-2-Clause</strong><br>
+                        A permissive license allowing commercial and non-commercial use with minimal restrictions.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="contact-footer">
+            <p>
+                <a href="/">Back to Map</a> |
+                <a href="/contact.html">Contact</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- 100% privacy-first analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>

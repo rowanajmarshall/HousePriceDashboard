@@ -864,6 +864,8 @@ html, body {
 
     .tab-buttons {
         width: 100%;
+        margin: 0;
+        margin-bottom: var(--spacing-md);
     }
 
     .radio-group {

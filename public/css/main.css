@@ -862,6 +862,10 @@ html, body {
         min-width: 140px;
     }
 
+    .tab-buttons {
+        width: 100%;
+    }
+
     .radio-group {
         flex-direction: row;
         flex-wrap: wrap;

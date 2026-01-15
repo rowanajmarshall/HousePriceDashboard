@@ -13,10 +13,10 @@
 
     // Configuration
     const config = {
-        defaultYear: 2024,
+        defaultYear: 2025,
         defaultPropertyType: 'A',
         minYear: 1995,
-        maxYear: 2024
+        maxYear: 2025
     };
 
     /**

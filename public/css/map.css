@@ -19,6 +19,9 @@
 /* Postcode sector polygon styles - using Leaflet's inline styles for fill colors */
 .leaflet-interactive {
     transition: fill-opacity 0.15s ease, stroke-width 0.15s ease;
+    /* Draw stroke first, then fill on top - this makes borders extend outward
+       rather than overlapping at shared edges, and helps cover small gaps */
+    paint-order: stroke fill;
 }
 
 .leaflet-interactive:hover {

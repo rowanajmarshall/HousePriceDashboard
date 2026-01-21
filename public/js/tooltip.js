@@ -558,7 +558,7 @@ const TooltipModule = (function() {
         if (price === null || price === undefined) {
             return '-';
         }
-        return '£' + price.toLocaleString('en-GB');
+        return '£' + price.toLocaleString('en-GB', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
 
     /**

@@ -80,7 +80,7 @@ const DataLoader = (function() {
             return price;
         }
 
-        return price * (toCPI / fromCPI);
+        return Math.round(price * (toCPI / fromCPI));
     }
 
     /**

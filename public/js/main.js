@@ -199,8 +199,24 @@
 
         if (!toggle || !panel) return;
 
-        // Restore state from localStorage
-        const isCollapsed = localStorage.getItem('controlsCollapsed') === 'true';
+        // Check if user is on mobile device
+        const isMobile = window.innerWidth <= 768;
+
+        // Get stored state from localStorage
+        const storedState = localStorage.getItem('controlsCollapsed');
+
+        // Determine if panel should be collapsed
+        // On mobile: default to collapsed unless explicitly set to expanded
+        // On desktop: default to expanded unless explicitly set to collapsed
+        let isCollapsed;
+        if (storedState !== null) {
+            // User has previously interacted with the collapse toggle
+            isCollapsed = storedState === 'true';
+        } else {
+            // First visit - default to collapsed on mobile, expanded on desktop
+            isCollapsed = isMobile;
+        }
+
         if (isCollapsed) {
             panel.classList.add('collapsed');
             toggle.setAttribute('aria-expanded', 'false');

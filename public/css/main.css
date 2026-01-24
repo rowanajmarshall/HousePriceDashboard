@@ -801,7 +801,8 @@ html, body {
         flex-wrap: wrap;
         gap: var(--spacing-md);
         padding: var(--spacing-md);
-        max-height: calc(100dvh - var(--header-height) - 50px);
+        /* Use 60vh instead of calc with --header-height since --header-height is 'auto' on mobile */
+        max-height: 60vh;
         overflow-y: auto;
     }
 

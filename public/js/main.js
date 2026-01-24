@@ -235,6 +235,12 @@
             if (handleLabel) {
                 handleLabel.textContent = expanded ? 'Hide Filters' : 'Show Filters';
             }
+
+            // Recalculate map size after layout change
+            // Small delay ensures CSS transition completes
+            setTimeout(() => {
+                MapModule.invalidateSize();
+            }, 300);
         });
     }
 

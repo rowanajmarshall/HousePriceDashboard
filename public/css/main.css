@@ -801,6 +801,8 @@ html, body {
         flex-wrap: wrap;
         gap: var(--spacing-md);
         padding: var(--spacing-md);
+        max-height: calc(100dvh - var(--header-height) - 50px);
+        overflow-y: auto;
     }
 
     /* Mobile controls handle (bottom drawer) */

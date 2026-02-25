@@ -42,6 +42,13 @@
         headingEl.textContent = sectorCode + ' \u2014 House Price History';
         document.title = sectorCode + ' \u2014 House Price History | UK House Price Heatmap';
 
+        // Fire a named Simple Analytics event with the postcode.
+        // Uses the queue pattern so it works whether SA has loaded yet or not.
+        window.sa_event = window.sa_event || function () {
+            (window.sa_event.q = window.sa_event.q || []).push([].slice.call(arguments));
+        };
+        window.sa_event('area_' + sectorCode.toLowerCase());
+
         buildPropertyTypeFilters();
         loadData();
     }

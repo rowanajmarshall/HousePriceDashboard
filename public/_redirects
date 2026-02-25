@@ -1,1 +1,1 @@
-/area/:code  /area-page.html?code=:code  200
+# /area/:code routing is handled by src/worker.js

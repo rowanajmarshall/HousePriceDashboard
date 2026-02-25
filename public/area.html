@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area Price History | UK House Price Heatmap</title>
+    <base href="/">
+
+    <!-- Social Media Preview -->
+    <meta property="og:title" content="Area Price History | UK House Price Heatmap">
+    <meta property="og:description" content="Historical house price data by postcode district">
+    <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Area Price History | UK House Price Heatmap">
+    <meta name="twitter:description" content="Historical house price data by postcode district">
+    <meta name="twitter:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="css/main.css?v=20">
+
+    <style>
+        .area-main {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--color-background);
+            padding: var(--spacing-xl) var(--spacing-lg);
+        }
+
+        .area-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .area-back {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--color-accent);
+            text-decoration: none;
+            margin-bottom: var(--spacing-lg);
+            font-size: var(--font-size-sm);
+        }
+
+        .area-back:hover {
+            text-decoration: underline;
+        }
+
+        .area-heading {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .area-controls {
+            display: flex;
+            gap: var(--spacing-lg);
+            align-items: center;
+            margin-bottom: var(--spacing-xl);
+            flex-wrap: wrap;
+            background: var(--color-surface);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .controls-label {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--color-text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: var(--spacing-xs);
+        }
+
+        .mode-toggle {
+            display: flex;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .mode-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            background: var(--color-surface);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--color-text-light);
+            transition: all 0.15s;
+            font-family: var(--font-family);
+        }
+
+        .mode-btn + .mode-btn {
+            border-left: 1px solid var(--color-border);
+        }
+
+        .mode-btn.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .prop-type-filters {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .prop-type-label {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--color-border);
+            transition: border-color 0.15s;
+            user-select: none;
+        }
+
+        .prop-type-label:hover {
+            border-color: var(--color-accent);
+        }
+
+        .prop-type-label input {
+            display: none;
+        }
+
+        .prop-type-label input:checked ~ .prop-type-text {
+            font-weight: 600;
+        }
+
+        .prop-type-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .chart-section {
+            background: var(--color-surface);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-xl);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chart-section h2 {
+            font-size: var(--font-size-lg);
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 360px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .chart-download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: transparent;
+            color: var(--color-text-light);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .chart-download-btn:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .area-loading {
+            text-align: center;
+            padding: 80px var(--spacing-xl);
+            color: var(--color-text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .area-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .area-attribution {
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--color-border);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-light);
+        }
+
+        .area-attribution a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+
+        .area-attribution a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .area-main {
+                padding: var(--spacing-md);
+            }
+
+            .area-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-md);
+            }
+
+            .chart-wrapper {
+                height: 260px;
+            }
+
+            .area-heading {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-titles">
+                    <a href="/" class="header-link">
+                        <h1>UK House Price Heatmap</h1>
+                    </a>
+                    <p class="subtitle">Postcode area price history</p>
+                </div>
+                <nav class="header-nav">
+                    <a href="/" class="nav-link">Map</a>
+                    <a href="/contact.html" class="nav-link">Contact</a>
+                    <a href="/attribution.html" class="nav-link">Attributions</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="area-main">
+            <div class="area-container">
+                <a href="/" class="area-back">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                    Back to map
+                </a>
+
+                <h1 class="area-heading" id="area-heading">Loading...</h1>
+
+                <!-- Error state -->
+                <div class="area-error" id="area-error" style="display: none;"></div>
+
+                <!-- Loading state -->
+                <div class="area-loading" id="area-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading price history...</p>
+                </div>
+
+                <!-- Content (shown after data loads) -->
+                <div id="area-content" style="display: none;">
+
+                    <!-- Controls -->
+                    <div class="area-controls">
+                        <div style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                            <span class="controls-label">Price</span>
+                            <div class="mode-toggle">
+                                <button class="mode-btn active" data-mode="nominal">Nominal</button>
+                                <button class="mode-btn" data-mode="real">Real (2025 £)</button>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: var(--spacing-sm); flex-wrap: wrap;">
+                            <span class="controls-label">Type</span>
+                            <div class="prop-type-filters" id="prop-type-filters">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart 1: Average Price -->
+                    <div class="chart-section">
+                        <h2>Average Price by Year</h2>
+                        <div class="chart-wrapper">
+                            <canvas id="price-chart"></canvas>
+                        </div>
+                        <button class="chart-download-btn" id="download-price">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download chart
+                        </button>
+                    </div>
+
+                    <!-- Chart 2: Transaction Volume -->
+                    <div class="chart-section">
+                        <h2>Transaction Volume by Year</h2>
+                        <div class="chart-wrapper">
+                            <canvas id="volume-chart"></canvas>
+                        </div>
+                        <button class="chart-download-btn" id="download-volume">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Download chart
+                        </button>
+                    </div>
+
+                    <!-- Attribution -->
+                    <div class="area-attribution">
+                        <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Inflation data: <a href="https://www.ons.gov.uk/" target="_blank" rel="noopener">ONS CPI series D7BT</a>. Real prices expressed in 2025 pounds.</p>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+    <!-- Application JS -->
+    <script src="js/data-loader.js?v=20"></script>
+    <script src="js/area.js?v=1"></script>
+
+    <!-- 100% privacy-first analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>

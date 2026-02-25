@@ -134,6 +134,12 @@ const TooltipModule = (function() {
             });
         }
 
+        // Set area history link
+        const areaLink = tooltip.querySelector('.area-link');
+        if (areaLink) {
+            areaLink.href = '/area/' + sectorCode;
+        }
+
         // Add to DOM
         document.body.appendChild(tooltip);
         activeTooltip = tooltip;
@@ -246,6 +252,12 @@ const TooltipModule = (function() {
                 e.stopPropagation();
                 takeScreenshot(sectorCode);
             });
+        }
+
+        // Set area history link
+        const areaLink = tooltip.querySelector('.area-link');
+        if (areaLink) {
+            areaLink.href = '/area/' + sectorCode;
         }
 
         // Add to DOM

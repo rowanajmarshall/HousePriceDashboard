@@ -12,15 +12,20 @@
         { code: 'F', label: 'Flat',       color: '#9b59b6' }
     ];
 
-    // Extract postcode from URL: /area/SY23 → SY23
-    // The Worker (src/worker.js) ensures the browser URL is always /area/:code.
-    const pathParts  = window.location.pathname.replace(/\/$/, '').split('/');
-    const sectorCode = (pathParts[pathParts.length - 1] || '').toUpperCase();
+    // Extract postcode from URL path (/area/SW1) or query param (?code=SW1).
+    // Regular pages arrive via the Worker with the path intact.
+    // Embed iframes use /area-page?code=SW1&embed=price (static file, no Worker).
+    const searchParams = new URLSearchParams(window.location.search);
+    const pathParts    = window.location.pathname.replace(/\/$/, '').split('/');
+    const pathCode     = (pathParts[pathParts.length - 1] || '').toUpperCase();
+    const POSTCODE_RE  = /^[A-Z]{1,2}\d{1,2}[A-Z]?$/;
+    const sectorCode   = POSTCODE_RE.test(pathCode)
+        ? pathCode
+        : (searchParams.get('code') || '').toUpperCase();
 
     // Embed mode: ?embed=price|median|volume  (+ optional &real=1)
-    const searchParams = new URLSearchParams(window.location.search);
-    const embedChart   = searchParams.get('embed');  // null if not an embed
-    const isEmbed      = !!embedChart;
+    const embedChart = searchParams.get('embed');  // null if not an embed
+    const isEmbed    = !!embedChart;
 
     // DOM references
     const headingEl  = document.getElementById('area-heading');
@@ -127,12 +132,13 @@
             if (searchParams.get('real') === '1') isReal = true;
         }
 
-        // Fire a named Simple Analytics event with the postcode.
-        // Uses the queue pattern so it works whether SA has loaded yet or not.
-        window.sa_event = window.sa_event || function () {
-            (window.sa_event.q = window.sa_event.q || []).push([].slice.call(arguments));
-        };
-        window.sa_event('area_' + sectorCode.toLowerCase());
+        // Fire a named Simple Analytics event with the postcode (non-embed only).
+        if (!isEmbed) {
+            window.sa_event = window.sa_event || function () {
+                (window.sa_event.q = window.sa_event.q || []).push([].slice.call(arguments));
+            };
+            window.sa_event('area_' + sectorCode.toLowerCase());
+        }
 
         buildPropertyTypeFilters();
         loadData();
@@ -545,9 +551,10 @@
     const CHART_LABELS = { price: 'Average Price', median: 'Median Price', volume: 'Transaction Volume' };
 
     function getEmbedUrl(chartKey) {
-        const params = new URLSearchParams({ embed: chartKey });
+        // Use /area-page directly (static file, no Worker needed) with code as a query param.
+        const params = new URLSearchParams({ code: sectorCode, embed: chartKey });
         if (isReal && chartKey !== 'volume') params.set('real', '1');
-        return window.location.origin + '/area/' + sectorCode + '?' + params.toString();
+        return window.location.origin + '/area-page?' + params.toString();
     }
 
     function buildIframeSnippet(chartKey) {

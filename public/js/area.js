@@ -155,19 +155,35 @@
         return { avg: Math.round(weightedSum / totalCount), count: totalCount };
     }
 
-    function getVolumeData() {
-        return YEARS.map(year => {
-            const yearData = allYearData[year];
-            if (!yearData) return null;
-            // Use pre-computed 'A' count, or sum individual types
-            if (yearData['A'] && yearData['A'].count) {
-                return yearData['A'].count;
-            }
-            let total = 0;
-            for (const t of ['D', 'S', 'T', 'F']) {
-                if (yearData[t]) total += yearData[t].count;
-            }
-            return total || null;
+    function getVolumeDatasets() {
+        return PROPERTY_TYPES.map(({ code, label, color }) => {
+            const data = YEARS.map(year => {
+                const yearData = allYearData[year];
+                if (!yearData) return null;
+
+                if (code === 'A') {
+                    if (yearData['A'] && yearData['A'].count) return yearData['A'].count;
+                    let total = 0;
+                    for (const t of ['D', 'S', 'T', 'F']) {
+                        if (yearData[t]) total += yearData[t].count;
+                    }
+                    return total || null;
+                }
+
+                return (yearData[code] && yearData[code].count) ? yearData[code].count : null;
+            });
+
+            return {
+                label,
+                data,
+                borderColor: color,
+                backgroundColor: color + '18',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.3,
+                spanGaps: true
+            };
         });
     }
 
@@ -219,28 +235,23 @@
         if (volumeChart) volumeChart.destroy();
 
         volumeChart = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: YEARS,
-                datasets: [{
-                    label: 'Transactions',
-                    data: getVolumeData(),
-                    backgroundColor: '#3498db40',
-                    borderColor: '#3498db',
-                    borderWidth: 1
-                }]
+                datasets: getVolumeDatasets()
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { display: false },
+                    legend: { position: 'top' },
                     tooltip: {
                         callbacks: {
                             label: function (ctx) {
                                 const v = ctx.parsed.y;
-                                if (v === null || v === undefined) return 'No data';
-                                return v.toLocaleString('en-GB') + ' transactions';
+                                if (v === null || v === undefined) return ctx.dataset.label + ': No data';
+                                return ctx.dataset.label + ': ' + v.toLocaleString('en-GB') + ' sales';
                             }
                         }
                     }
@@ -279,6 +290,10 @@
                 if (priceChart) {
                     priceChart.setDatasetVisibility(idx, cb.checked);
                     priceChart.update();
+                }
+                if (volumeChart) {
+                    volumeChart.setDatasetVisibility(idx, cb.checked);
+                    volumeChart.update();
                 }
             });
         });

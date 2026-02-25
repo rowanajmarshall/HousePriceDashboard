@@ -1,1 +1,1 @@
-/area/*  /area-page.html  200
+/area/:code  /area-page.html?code=:code  200

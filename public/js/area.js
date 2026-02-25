@@ -12,14 +12,24 @@
         { code: 'F', label: 'Flat',       color: '#9b59b6' }
     ];
 
-    // Extract postcode from URL: /area/SY23 → SY23
+    // Extract postcode from URL path (/area/SY23) or query param (?code=SY23)
+    // The query param fallback handles Cloudflare's pretty-URL rewrite behaviour.
+    const searchParams = new URLSearchParams(window.location.search);
     const pathParts = window.location.pathname.replace(/\/$/, '').split('/');
-    const sectorCode = (pathParts[pathParts.length - 1] || '').toUpperCase();
+    const pathCode  = (pathParts[pathParts.length - 1] || '').toUpperCase();
+    const POSTCODE_RE = /^[A-Z]{1,2}\d{1,2}[A-Z]?$/;
+    const sectorCode = POSTCODE_RE.test(pathCode)
+        ? pathCode
+        : (searchParams.get('code') || '').toUpperCase();
+
+    // If postcode came from query param, fix the URL to the canonical /area/CODE form
+    if (sectorCode && !POSTCODE_RE.test(pathCode)) {
+        history.replaceState(null, '', '/area/' + sectorCode);
+    }
 
     // Embed mode: ?embed=price|median|volume  (+ optional &real=1)
-    const searchParams = new URLSearchParams(window.location.search);
-    const embedChart   = searchParams.get('embed');  // null if not an embed
-    const isEmbed      = !!embedChart;
+    const embedChart = searchParams.get('embed');  // null if not an embed
+    const isEmbed    = !!embedChart;
 
     // DOM references
     const headingEl  = document.getElementById('area-heading');

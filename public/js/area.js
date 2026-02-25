@@ -24,6 +24,7 @@
     const filtersEl  = document.getElementById('prop-type-filters');
 
     let priceChart  = null;
+    let medianChart = null;
     let volumeChart = null;
     let allYearData = null;  // { [year]: sectorData | null }
     let inflationData = null;
@@ -89,6 +90,7 @@
 
             setupControls();
             renderPriceChart();
+            renderMedianChart();
             renderVolumeChart();
 
             loadingEl.style.display = 'none';
@@ -155,6 +157,39 @@
         return { avg: Math.round(weightedSum / totalCount), count: totalCount };
     }
 
+    function getMedianDatasets(real) {
+        return PROPERTY_TYPES.map(({ code, label, color }) => {
+            const data = YEARS.map(year => {
+                const yearData = allYearData[year];
+                if (!yearData) return null;
+
+                let typeData = yearData[code];
+                if (code === 'A' && !typeData) typeData = computeAllAvg(yearData);
+                if (!typeData || !typeData.median) return null;
+
+                let price = typeData.median;
+                if (real && inflationData && inflationData.data) {
+                    const fromCPI = inflationData.data[String(year)];
+                    const toCPI   = inflationData.data[String(END_YEAR)];
+                    if (fromCPI && toCPI) price = Math.round(price * (toCPI / fromCPI));
+                }
+                return price;
+            });
+
+            return {
+                label,
+                data,
+                borderColor: color,
+                backgroundColor: color + '18',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.3,
+                spanGaps: true
+            };
+        });
+    }
+
     function getVolumeDatasets() {
         return PROPERTY_TYPES.map(({ code, label, color }) => {
             const data = YEARS.map(year => {
@@ -198,6 +233,47 @@
             data: {
                 labels: YEARS,
                 datasets: getPriceDatasets(isReal)
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const v = ctx.parsed.y;
+                                if (v === null || v === undefined) return ctx.dataset.label + ': No data';
+                                return ctx.dataset.label + ': \u00a3' + v.toLocaleString('en-GB');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function (v) {
+                                if (v >= 1000000) return '\u00a3' + (v / 1000000).toFixed(1) + 'm';
+                                if (v >= 1000)    return '\u00a3' + Math.round(v / 1000) + 'k';
+                                return '\u00a3' + v;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderMedianChart() {
+        const ctx = document.getElementById('median-chart').getContext('2d');
+        if (medianChart) medianChart.destroy();
+
+        medianChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: YEARS,
+                datasets: getMedianDatasets(isReal)
             },
             options: {
                 responsive: true,
@@ -291,6 +367,10 @@
                     priceChart.setDatasetVisibility(idx, cb.checked);
                     priceChart.update();
                 }
+                if (medianChart) {
+                    medianChart.setDatasetVisibility(idx, cb.checked);
+                    medianChart.update();
+                }
                 if (volumeChart) {
                     volumeChart.setDatasetVisibility(idx, cb.checked);
                     volumeChart.update();
@@ -302,18 +382,24 @@
         document.getElementById('download-price').addEventListener('click', function () {
             downloadChart('price-chart', 'Average Price by Year', true, sectorCode + '-prices');
         });
+        document.getElementById('download-median').addEventListener('click', function () {
+            downloadChart('median-chart', 'Median Price by Year', true, sectorCode + '-median');
+        });
         document.getElementById('download-volume').addEventListener('click', function () {
             downloadChart('volume-chart', 'Transaction Volume by Year', false, sectorCode + '-volume');
         });
     }
 
     function updatePriceDatasets() {
-        if (!priceChart) return;
-        const newDatasets = getPriceDatasets(isReal);
-        newDatasets.forEach(function (ds, i) {
-            priceChart.data.datasets[i].data = ds.data;
+        getPriceDatasets(isReal).forEach(function (ds, i) {
+            if (priceChart) priceChart.data.datasets[i].data = ds.data;
         });
-        priceChart.update();
+        if (priceChart) priceChart.update();
+
+        getMedianDatasets(isReal).forEach(function (ds, i) {
+            if (medianChart) medianChart.data.datasets[i].data = ds.data;
+        });
+        if (medianChart) medianChart.update();
     }
 
     // --------------------------------------------------------------- download

@@ -1,5 +1,5 @@
 {
   "rewrites": [
-    { "source": "/area/:postcode", "destination": "/area/app.html" }
+    { "source": "/area/:postcode", "destination": "/area-page.html" }
   ]
 }

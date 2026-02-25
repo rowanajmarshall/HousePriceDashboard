@@ -231,6 +231,25 @@
 
     // ------------------------------------------------------------------ charts
 
+    // Shared legend config: fades hidden datasets instead of striking through them
+    const fadedLegend = {
+        position: 'top',
+        labels: {
+            generateLabels: function (chart) {
+                const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                labels.forEach(function (label) {
+                    if (!chart.isDatasetVisible(label.datasetIndex)) {
+                        label.fontColor   = 'rgba(0, 0, 0, 0.25)';
+                        label.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                        label.fillStyle   = 'rgba(0, 0, 0, 0.05)';
+                        label.hidden      = false; // suppress strikethrough
+                    }
+                });
+                return labels;
+            }
+        }
+    };
+
     function renderPriceChart() {
         const ctx = document.getElementById('price-chart').getContext('2d');
         if (priceChart) priceChart.destroy();
@@ -246,7 +265,7 @@
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top' },
+                    legend: fadedLegend,
                     tooltip: {
                         callbacks: {
                             label: function (ctx) {
@@ -287,7 +306,7 @@
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top' },
+                    legend: fadedLegend,
                     tooltip: {
                         callbacks: {
                             label: function (ctx) {
@@ -328,7 +347,7 @@
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top' },
+                    legend: fadedLegend,
                     tooltip: {
                         callbacks: {
                             label: function (ctx) {

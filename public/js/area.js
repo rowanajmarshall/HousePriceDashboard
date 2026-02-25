@@ -16,6 +16,11 @@
     const pathParts = window.location.pathname.replace(/\/$/, '').split('/');
     const sectorCode = (pathParts[pathParts.length - 1] || '').toUpperCase();
 
+    // Embed mode: ?embed=price|median|volume  (+ optional &real=1)
+    const searchParams = new URLSearchParams(window.location.search);
+    const embedChart   = searchParams.get('embed');  // null if not an embed
+    const isEmbed      = !!embedChart;
+
     // DOM references
     const headingEl  = document.getElementById('area-heading');
     const loadingEl  = document.getElementById('area-loading');
@@ -30,6 +35,75 @@
     let inflationData = null;
     let isReal = false;
 
+    // ------------------------------------------------------------------ SEO helpers
+
+    function setMetaTag(selector, attr, value) {
+        let el = document.querySelector(selector);
+        if (!el) {
+            el = document.createElement('meta');
+            const parts = selector.match(/\[(\w+[^=]*)="([^"]+)"\]/);
+            if (parts) el.setAttribute(parts[1], parts[2]);
+            document.head.appendChild(el);
+        }
+        el.setAttribute(attr, value);
+    }
+
+    function setCanonical(url) {
+        let el = document.querySelector('link[rel="canonical"]');
+        if (!el) {
+            el = document.createElement('link');
+            el.setAttribute('rel', 'canonical');
+            document.head.appendChild(el);
+        }
+        el.setAttribute('href', url);
+    }
+
+    function setJsonLd(data) {
+        let el = document.getElementById('area-json-ld');
+        if (!el) {
+            el = document.createElement('script');
+            el.id = 'area-json-ld';
+            el.type = 'application/ld+json';
+            document.head.appendChild(el);
+        }
+        el.textContent = JSON.stringify(data);
+    }
+
+    function applyMetaTags(code, description) {
+        const title = code + ' House Prices | UK House Price Heatmap';
+        const pageUrl = 'https://housepricedashboard.co.uk/area/' + code;
+
+        document.title = code + ' \u2014 House Price History | UK House Price Heatmap';
+        setCanonical(pageUrl);
+
+        setMetaTag('meta[name="description"]', 'content', description);
+        setMetaTag('meta[property="og:title"]', 'content', title);
+        setMetaTag('meta[property="og:description"]', 'content', description);
+        setMetaTag('meta[property="og:url"]', 'content', pageUrl);
+        setMetaTag('meta[name="twitter:title"]', 'content', title);
+        setMetaTag('meta[name="twitter:description"]', 'content', description);
+
+        setJsonLd({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            'itemListElement': [
+                { '@type': 'ListItem', 'position': 1, 'name': 'UK House Price Heatmap', 'item': 'https://housepricedashboard.co.uk/' },
+                { '@type': 'ListItem', 'position': 2, 'name': code + ' House Prices', 'item': pageUrl }
+            ]
+        });
+    }
+
+    function getLatestAvgPrice() {
+        for (let y = END_YEAR; y >= START_YEAR; y--) {
+            const yd = allYearData[y];
+            if (!yd) continue;
+            let typeData = yd['A'];
+            if (!typeData) typeData = computeAllAvg(yd);
+            if (typeData && typeData.avg) return { year: y, price: typeData.avg };
+        }
+        return null;
+    }
+
     // ------------------------------------------------------------------ init
 
     function init() {
@@ -40,7 +114,17 @@
         }
 
         headingEl.textContent = sectorCode + ' \u2014 House Price History';
-        document.title = sectorCode + ' \u2014 House Price History | UK House Price Heatmap';
+
+        // Set initial meta tags with template description (updated with real data after load)
+        if (!isEmbed) {
+            applyMetaTags(sectorCode, 'House price history for ' + sectorCode + ' postcode district \u2014 explore average and median prices from 1995 to 2025 for detached, semi-detached, terraced and flat properties.');
+        }
+
+        // Apply embed mode
+        if (isEmbed) {
+            document.body.classList.add('embed-mode');
+            if (searchParams.get('real') === '1') isReal = true;
+        }
 
         // Fire a named Simple Analytics event with the postcode.
         // Uses the queue pattern so it works whether SA has loaded yet or not.
@@ -93,6 +177,15 @@
             if (!hasAnyData) {
                 showError('No sales data found for postcode district ' + sectorCode + '. This may be a very rural area or the code may not exist.');
                 return;
+            }
+
+            // Update meta description with real price data
+            if (!isEmbed) {
+                const latest = getLatestAvgPrice();
+                if (latest) {
+                    const priceStr = '\u00a3' + latest.price.toLocaleString('en-GB');
+                    applyMetaTags(sectorCode, sectorCode + ' house prices: average ' + priceStr + ' (' + latest.year + '). Explore 30 years of property price history (1995\u20132025) including detached, semi-detached, terraced and flat homes. Data from UK Land Registry.');
+                }
             }
 
             setupControls();
@@ -231,18 +324,41 @@
 
     // ------------------------------------------------------------------ charts
 
+    // Tracks which dataset indices the user has hidden — single source of truth
+    // used by all three charts' generateLabels so Chart.js internals can't interfere.
+    const hiddenDatasets = new Set();
+
     // Shared legend config: fades hidden datasets instead of striking through them
     const fadedLegend = {
         position: 'top',
+        onClick: function (e, legendItem) {
+            const idx = legendItem.datasetIndex;
+            if (hiddenDatasets.has(idx)) {
+                hiddenDatasets.delete(idx);
+            } else {
+                hiddenDatasets.add(idx);
+            }
+            const isHidden = hiddenDatasets.has(idx);
+            // Sync the checkbox
+            const cb = document.querySelector('.prop-type-checkbox[data-index="' + idx + '"]');
+            if (cb) cb.checked = !isHidden;
+            // Update all charts so all legends redraw with faded style
+            [priceChart, medianChart, volumeChart].forEach(function (chart) {
+                if (chart) {
+                    chart.data.datasets[idx].hidden = isHidden;
+                    chart.update();
+                }
+            });
+        },
         labels: {
             generateLabels: function (chart) {
                 const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
                 labels.forEach(function (label) {
-                    if (!chart.isDatasetVisible(label.datasetIndex)) {
+                    label.hidden = false; // always suppress strikethrough
+                    if (hiddenDatasets.has(label.datasetIndex)) {
                         label.fontColor   = 'rgba(0, 0, 0, 0.25)';
                         label.strokeStyle = 'rgba(0, 0, 0, 0.1)';
                         label.fillStyle   = 'rgba(0, 0, 0, 0.05)';
-                        label.hidden      = false; // suppress strikethrough
                     }
                 });
                 return labels;
@@ -389,20 +505,27 @@
         document.querySelectorAll('.prop-type-checkbox').forEach(function (cb) {
             cb.addEventListener('change', function () {
                 const idx = parseInt(cb.dataset.index, 10);
+                if (cb.checked) {
+                    hiddenDatasets.delete(idx);
+                } else {
+                    hiddenDatasets.add(idx);
+                }
                 if (priceChart) {
-                    priceChart.setDatasetVisibility(idx, cb.checked);
+                    priceChart.data.datasets[idx].hidden = !cb.checked;
                     priceChart.update();
                 }
                 if (medianChart) {
-                    medianChart.setDatasetVisibility(idx, cb.checked);
+                    medianChart.data.datasets[idx].hidden = !cb.checked;
                     medianChart.update();
                 }
                 if (volumeChart) {
-                    volumeChart.setDatasetVisibility(idx, cb.checked);
+                    volumeChart.data.datasets[idx].hidden = !cb.checked;
                     volumeChart.update();
                 }
             });
         });
+
+        setupEmbedButtons();
 
         // Download buttons
         document.getElementById('download-price').addEventListener('click', function () {
@@ -416,6 +539,87 @@
         });
     }
 
+    // --------------------------------------------------------------- embed
+
+    const CHART_LABELS = { price: 'Average Price', median: 'Median Price', volume: 'Transaction Volume' };
+
+    function getEmbedUrl(chartKey) {
+        const params = new URLSearchParams({ embed: chartKey });
+        if (isReal && chartKey !== 'volume') params.set('real', '1');
+        return window.location.origin + '/area/' + sectorCode + '?' + params.toString();
+    }
+
+    function buildIframeSnippet(chartKey) {
+        const url = getEmbedUrl(chartKey);
+        return '<iframe src="' + url + '" width="100%" height="450" frameborder="0" ' +
+               'style="border:1px solid #e0e0e0;border-radius:4px;" ' +
+               'title="' + sectorCode + ' ' + CHART_LABELS[chartKey] + '"></iframe>';
+    }
+
+    function setEmbedFooter(chartKey) {
+        const footer = document.getElementById('embed-footer-' + chartKey);
+        if (!footer) return;
+        const modeLabel = (chartKey !== 'volume' && isReal) ? ' · Real (2025 \u00a3)' : '';
+        footer.innerHTML =
+            '<span>' + sectorCode + ' \u00b7 ' + CHART_LABELS[chartKey] + modeLabel + '</span>' +
+            '<a href="' + window.location.origin + '/area/' + sectorCode + '" target="_blank">' +
+            'housepricedashboard.co.uk \u2197</a>';
+    }
+
+    function refreshOpenEmbedPanels() {
+        document.querySelectorAll('.embed-panel').forEach(function (panel) {
+            if (panel.style.display !== 'none') {
+                const chartKey = panel.id.replace('embed-panel-', '');
+                const codeEl = document.getElementById('embed-code-' + chartKey);
+                if (codeEl) codeEl.textContent = buildIframeSnippet(chartKey);
+            }
+        });
+    }
+
+    function setupEmbedButtons() {
+        // Embed buttons — toggle panel visibility and populate code
+        document.querySelectorAll('.chart-embed-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const chartKey = btn.dataset.chart;
+                const panel    = document.getElementById('embed-panel-' + chartKey);
+                const codeEl   = document.getElementById('embed-code-' + chartKey);
+                const isOpen   = panel.style.display === 'block';
+
+                // Close all panels first
+                document.querySelectorAll('.embed-panel').forEach(function (p) { p.style.display = 'none'; });
+                document.querySelectorAll('.chart-embed-btn').forEach(function (b) { b.classList.remove('active'); });
+
+                if (!isOpen) {
+                    codeEl.textContent = buildIframeSnippet(chartKey);
+                    panel.style.display = 'block';
+                    btn.classList.add('active');
+                }
+            });
+        });
+
+        // Copy buttons
+        document.querySelectorAll('.copy-embed-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const codeEl = document.getElementById(btn.dataset.target);
+                navigator.clipboard.writeText(codeEl.textContent).then(function () {
+                    const orig = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(function () { btn.textContent = orig; }, 2000);
+                });
+            });
+        });
+
+        // In embed mode: hide all chart sections except the target, populate footer
+        if (isEmbed) {
+            document.querySelectorAll('.chart-section').forEach(function (section) {
+                if (section.dataset.chart !== embedChart) {
+                    section.style.display = 'none';
+                }
+            });
+            setEmbedFooter(embedChart);
+        }
+    }
+
     function updatePriceDatasets() {
         getPriceDatasets(isReal).forEach(function (ds, i) {
             if (priceChart) priceChart.data.datasets[i].data = ds.data;
@@ -426,6 +630,10 @@
             if (medianChart) medianChart.data.datasets[i].data = ds.data;
         });
         if (medianChart) medianChart.update();
+
+        // Refresh any open embed code panels (real/nominal affects the URL)
+        refreshOpenEmbedPanels();
+        if (isEmbed) setEmbedFooter(embedChart);
     }
 
     // --------------------------------------------------------------- download

@@ -6,9 +6,12 @@
     <title>Area Price History | UK House Price Heatmap</title>
     <base href="/">
 
+    <!-- SEO -->
+    <meta name="description" content="Historical house price data by postcode district — explore 30 years of average, median and transaction data for UK properties.">
+
     <!-- Social Media Preview -->
     <meta property="og:title" content="Area Price History | UK House Price Heatmap">
-    <meta property="og:description" content="Historical house price data by postcode district">
+    <meta property="og:description" content="Historical house price data by postcode district — explore 30 years of average, median and transaction data for UK properties.">
     <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
@@ -166,6 +169,154 @@
             margin-bottom: var(--spacing-md);
         }
 
+        .chart-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .chart-embed-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: transparent;
+            color: var(--color-text-light);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .chart-embed-btn:hover,
+        .chart-embed-btn.active {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+        }
+
+        .embed-panel {
+            display: none;
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+        }
+
+        .embed-code-row {
+            display: flex;
+            gap: var(--spacing-sm);
+            align-items: stretch;
+        }
+
+        .embed-code {
+            flex: 1;
+            display: block;
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: white;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font-size: 12px;
+            font-family: monospace;
+            white-space: nowrap;
+            overflow-x: auto;
+            color: var(--color-text);
+        }
+
+        .copy-embed-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: var(--font-size-sm);
+            font-family: var(--font-family);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+
+        .copy-embed-btn:hover {
+            background: var(--color-secondary);
+        }
+
+        .embed-hint {
+            margin-top: var(--spacing-sm);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-light);
+            margin-bottom: 0;
+        }
+
+        /* Embed footer — attribution shown only in embed/iframe mode */
+        .embed-footer {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-light);
+            flex-shrink: 0;
+        }
+
+        .embed-footer a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+
+        .embed-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── Embed mode ─────────────────────────────────────────────────────── */
+        body.embed-mode .header,
+        body.embed-mode .area-back,
+        body.embed-mode .area-heading,
+        body.embed-mode .area-controls,
+        body.embed-mode .area-attribution,
+        body.embed-mode .chart-actions,
+        body.embed-mode .embed-panel {
+            display: none !important;
+        }
+
+        body.embed-mode .area-main {
+            padding: var(--spacing-sm);
+            overflow: hidden;
+        }
+
+        body.embed-mode .area-container {
+            max-width: none;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.embed-mode #area-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        body.embed-mode .chart-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 0;
+            box-shadow: none;
+            min-height: 0;
+        }
+
+        body.embed-mode .chart-wrapper {
+            flex: 1;
+            height: auto !important;
+            min-height: 0;
+        }
+
+        body.embed-mode .embed-footer {
+            display: flex;
+        }
+
         .chart-download-btn {
             display: inline-flex;
             align-items: center;
@@ -304,51 +455,102 @@
                     </div>
 
                     <!-- Chart 1: Average Price -->
-                    <div class="chart-section">
+                    <div class="chart-section" data-chart="price">
                         <h2>Average Price by Year</h2>
                         <div class="chart-wrapper">
                             <canvas id="price-chart"></canvas>
                         </div>
-                        <button class="chart-download-btn" id="download-price">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Download chart
-                        </button>
+                        <div class="chart-actions">
+                            <button class="chart-download-btn" id="download-price">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Download
+                            </button>
+                            <button class="chart-embed-btn" data-chart="price">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                </svg>
+                                Embed
+                            </button>
+                        </div>
+                        <div class="embed-panel" id="embed-panel-price">
+                            <div class="embed-code-row">
+                                <code class="embed-code" id="embed-code-price"></code>
+                                <button class="copy-embed-btn" data-target="embed-code-price">Copy</button>
+                            </div>
+                            <p class="embed-hint">Paste into your website's HTML. Reflects current Nominal / Real setting.</p>
+                        </div>
+                        <div class="embed-footer" id="embed-footer-price"></div>
                     </div>
 
                     <!-- Chart 2: Median Price -->
-                    <div class="chart-section">
+                    <div class="chart-section" data-chart="median">
                         <h2>Median Price by Year</h2>
                         <div class="chart-wrapper">
                             <canvas id="median-chart"></canvas>
                         </div>
-                        <button class="chart-download-btn" id="download-median">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Download chart
-                        </button>
+                        <div class="chart-actions">
+                            <button class="chart-download-btn" id="download-median">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Download
+                            </button>
+                            <button class="chart-embed-btn" data-chart="median">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                </svg>
+                                Embed
+                            </button>
+                        </div>
+                        <div class="embed-panel" id="embed-panel-median">
+                            <div class="embed-code-row">
+                                <code class="embed-code" id="embed-code-median"></code>
+                                <button class="copy-embed-btn" data-target="embed-code-median">Copy</button>
+                            </div>
+                            <p class="embed-hint">Paste into your website's HTML. Reflects current Nominal / Real setting.</p>
+                        </div>
+                        <div class="embed-footer" id="embed-footer-median"></div>
                     </div>
 
                     <!-- Chart 3: Transaction Volume -->
-                    <div class="chart-section">
+                    <div class="chart-section" data-chart="volume">
                         <h2>Transaction Volume by Year</h2>
                         <div class="chart-wrapper">
                             <canvas id="volume-chart"></canvas>
                         </div>
-                        <button class="chart-download-btn" id="download-volume">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            Download chart
-                        </button>
+                        <div class="chart-actions">
+                            <button class="chart-download-btn" id="download-volume">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Download
+                            </button>
+                            <button class="chart-embed-btn" data-chart="volume">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="16 18 22 12 16 6"></polyline>
+                                    <polyline points="8 6 2 12 8 18"></polyline>
+                                </svg>
+                                Embed
+                            </button>
+                        </div>
+                        <div class="embed-panel" id="embed-panel-volume">
+                            <div class="embed-code-row">
+                                <code class="embed-code" id="embed-code-volume"></code>
+                                <button class="copy-embed-btn" data-target="embed-code-volume">Copy</button>
+                            </div>
+                            <p class="embed-hint">Paste into your website's HTML.</p>
+                        </div>
+                        <div class="embed-footer" id="embed-footer-volume"></div>
                     </div>
 
                     <!-- Attribution -->

@@ -86,35 +86,35 @@
                     <button class="tab-btn" data-tab="change">Change View</button>
                 </div>
 
+                <!-- Shared Property Type Filter -->
+                <div class="filter-group" style="margin-top: var(--spacing-sm)">
+                    <label class="filter-label">Property Type</label>
+                    <div class="radio-group" id="property-type-filter">
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="A" checked>
+                            <span class="radio-label">All Types</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="D">
+                            <span class="radio-label">Detached</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="S">
+                            <span class="radio-label">Semi-Detached</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="T">
+                            <span class="radio-label">Terraced</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="property-type" value="F">
+                            <span class="radio-label">Flats/Maisonettes</span>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- Tab 1: Price View -->
                 <div class="tab-content active" id="tab-price">
-                    <!-- Property Type Filter -->
-                    <div class="filter-group">
-                        <label class="filter-label">Property Type</label>
-                        <div class="radio-group" id="property-type-filter">
-                            <label class="radio-option">
-                                <input type="radio" name="property-type" value="A" checked>
-                                <span class="radio-label">All Types</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="property-type" value="D">
-                                <span class="radio-label">Detached</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="property-type" value="S">
-                                <span class="radio-label">Semi-Detached</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="property-type" value="T">
-                                <span class="radio-label">Terraced</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="property-type" value="F">
-                                <span class="radio-label">Flats/Maisonettes</span>
-                            </label>
-                        </div>
-                    </div>
-
                     <!-- Year Filter -->
                     <div class="filter-group">
                         <label class="filter-label" for="year-filter">Year</label>
@@ -154,52 +154,20 @@
                         </div>
                     </div>
 
-                    <!-- Property Type Filter -->
+                    <!-- Year Range Filter -->
                     <div class="filter-group">
-                        <label class="filter-label">Property Type</label>
-                        <div class="radio-group" id="change-property-type-filter">
-                            <label class="radio-option">
-                                <input type="radio" name="change-property-type" value="A" checked>
-                                <span class="radio-label">All Types</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="change-property-type" value="D">
-                                <span class="radio-label">Detached</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="change-property-type" value="S">
-                                <span class="radio-label">Semi-Detached</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="change-property-type" value="T">
-                                <span class="radio-label">Terraced</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="change-property-type" value="F">
-                                <span class="radio-label">Flats/Maisonettes</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Start Year Filter -->
-                    <div class="filter-group">
-                        <label class="filter-label">Start Year</label>
-                        <div class="year-selector">
-                            <input type="range" id="start-year-slider" min="1995" max="2025" value="2014">
-                            <div class="year-display">
-                                <span id="start-year-value">2014</span>
+                        <label class="filter-label">Year Range</label>
+                        <div class="dual-range">
+                            <div class="dual-range-track">
+                                <div class="dual-range-fill" id="change-range-fill"></div>
                             </div>
+                            <input type="range" class="dual-range-input" id="start-year-slider" min="1995" max="2025" value="2014">
+                            <input type="range" class="dual-range-input" id="end-year-slider" min="1995" max="2025" value="2025">
                         </div>
-                    </div>
-
-                    <!-- End Year Filter -->
-                    <div class="filter-group">
-                        <label class="filter-label">End Year</label>
-                        <div class="year-selector">
-                            <input type="range" id="end-year-slider" min="1995" max="2025" value="2025">
-                            <div class="year-display">
-                                <span id="end-year-value">2025</span>
-                            </div>
+                        <div class="year-display">
+                            <span id="start-year-value">2014</span>
+                            <span class="year-range-sep"> – </span>
+                            <span id="end-year-value">2025</span>
                         </div>
                     </div>
 

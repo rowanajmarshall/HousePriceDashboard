@@ -30,6 +30,23 @@ const FiltersModule = (function() {
         slider.style.background = `linear-gradient(to right, var(--color-accent) ${pct}%, var(--color-border) ${pct}%)`;
     }
 
+    /**
+     * Update the dual-range fill div to span between the two thumbs
+     * @param {HTMLInputElement} startSlider
+     * @param {HTMLInputElement} endSlider
+     * @param {HTMLElement} fill
+     */
+    function updateDualRangeFill(startSlider, endSlider, fill) {
+        if (!fill) return;
+        const min = parseFloat(startSlider.min);
+        const max = parseFloat(startSlider.max);
+        const range = max - min;
+        const leftPct  = ((startSlider.value - min) / range) * 100;
+        const rightPct = ((endSlider.value   - min) / range) * 100;
+        fill.style.left  = leftPct + '%';
+        fill.style.width = (rightPct - leftPct) + '%';
+    }
+
     // Property type labels
     const propertyTypeLabels = {
         'A': 'All Types',
@@ -71,12 +88,9 @@ const FiltersModule = (function() {
         changeState.startYear = Math.max(minYear, maxYear - 10); // Default: 10 years ago
         changeState.endYear = maxYear;
 
-        // Initialize price view controls
+        // Initialize controls
         initPropertyTypeFilter();
         initYearSlider(minYear, maxYear, defaultYear);
-
-        // Initialize change view controls
-        initChangePropertyTypeFilter();
         initChangeYearSliders(minYear, maxYear);
         initAdjustmentModeFilter();
     }
@@ -100,13 +114,22 @@ const FiltersModule = (function() {
                 if (this.checked) {
                     const oldType = state.propertyType;
                     state.propertyType = this.value;
+                    changeState.propertyType = this.value;
 
-                    if (oldType !== state.propertyType && onChangeCallback) {
-                        onChangeCallback({
-                            type: 'propertyType',
-                            value: state.propertyType,
-                            state: { ...state }
-                        });
+                    if (oldType !== state.propertyType) {
+                        if (onChangeCallback) {
+                            onChangeCallback({
+                                type: 'propertyType',
+                                value: state.propertyType,
+                                state: { ...state }
+                            });
+                        }
+                        if (onChangeViewCallback) {
+                            onChangeViewCallback({
+                                type: 'propertyType',
+                                state: { ...changeState }
+                            });
+                        }
                     }
                 }
             });
@@ -157,96 +180,70 @@ const FiltersModule = (function() {
     }
 
     /**
-     * Initialize change view property type radio buttons
-     */
-    function initChangePropertyTypeFilter() {
-        const container = document.getElementById('change-property-type-filter');
-        if (!container) return;
-
-        const radios = container.querySelectorAll('input[type="radio"]');
-        radios.forEach(radio => {
-            // Set initial checked state
-            if (radio.value === changeState.propertyType) {
-                radio.checked = true;
-            }
-
-            // Add change listener
-            radio.addEventListener('change', function() {
-                if (this.checked) {
-                    changeState.propertyType = this.value;
-                    triggerChangeViewCallback('propertyType');
-                }
-            });
-        });
-    }
-
-    /**
-     * Initialize change view year sliders
+     * Initialize the dual-handle year range slider for change view
      * @param {number} minYear
      * @param {number} maxYear
      */
     function initChangeYearSliders(minYear, maxYear) {
-        // Start year slider
-        const startSlider = document.getElementById('start-year-slider');
+        const startSlider  = document.getElementById('start-year-slider');
+        const endSlider    = document.getElementById('end-year-slider');
         const startDisplay = document.getElementById('start-year-value');
+        const endDisplay   = document.getElementById('end-year-value');
+        const fill         = document.getElementById('change-range-fill');
 
-        if (startSlider && startDisplay) {
-            startSlider.min = minYear;
-            startSlider.max = maxYear;
-            startSlider.value = changeState.startYear;
-            startDisplay.textContent = changeState.startYear;
-            updateSliderFill(startSlider);
+        if (!startSlider || !endSlider) return;
 
-            startSlider.addEventListener('input', function() {
-                startDisplay.textContent = this.value;
-                updateSliderFill(this);
-            });
+        startSlider.min = endSlider.min = minYear;
+        startSlider.max = endSlider.max = maxYear;
+        startSlider.value = changeState.startYear;
+        endSlider.value   = changeState.endYear;
+        if (startDisplay) startDisplay.textContent = changeState.startYear;
+        if (endDisplay)   endDisplay.textContent   = changeState.endYear;
+        updateDualRangeFill(startSlider, endSlider, fill);
 
-            startSlider.addEventListener('change', function() {
-                const newYear = parseInt(this.value, 10);
-                // Ensure start year is strictly before end year
-                if (newYear >= changeState.endYear) {
-                    const maxStart = changeState.endYear - 1;
-                    this.value = maxStart;
-                    startDisplay.textContent = maxStart;
-                    changeState.startYear = maxStart;
-                } else {
-                    changeState.startYear = newYear;
-                }
-                triggerChangeViewCallback('startYear');
-            });
-        }
+        startSlider.addEventListener('input', function() {
+            if (parseInt(this.value, 10) >= parseInt(endSlider.value, 10)) {
+                this.value = parseInt(endSlider.value, 10) - 1;
+            }
+            if (startDisplay) startDisplay.textContent = this.value;
+            updateDualRangeFill(startSlider, endSlider, fill);
+        });
 
-        // End year slider
-        const endSlider = document.getElementById('end-year-slider');
-        const endDisplay = document.getElementById('end-year-value');
+        startSlider.addEventListener('change', function() {
+            const newYear = parseInt(this.value, 10);
+            if (newYear >= changeState.endYear) {
+                const clamped = changeState.endYear - 1;
+                this.value = clamped;
+                if (startDisplay) startDisplay.textContent = clamped;
+                changeState.startYear = clamped;
+            } else {
+                changeState.startYear = newYear;
+            }
+            updateDualRangeFill(startSlider, endSlider, fill);
+            triggerChangeViewCallback('startYear');
+        });
 
-        if (endSlider && endDisplay) {
-            endSlider.min = minYear;
-            endSlider.max = maxYear;
-            endSlider.value = changeState.endYear;
-            endDisplay.textContent = changeState.endYear;
-            updateSliderFill(endSlider);
+        endSlider.addEventListener('input', function() {
+            if (parseInt(this.value, 10) <= parseInt(startSlider.value, 10)) {
+                this.value = parseInt(startSlider.value, 10) + 1;
+            }
+            if (endDisplay) endDisplay.textContent = this.value;
+            updateDualRangeFill(startSlider, endSlider, fill);
+        });
 
-            endSlider.addEventListener('input', function() {
-                endDisplay.textContent = this.value;
-                updateSliderFill(this);
-            });
-
-            endSlider.addEventListener('change', function() {
-                const newYear = parseInt(this.value, 10);
-                // Ensure end year is strictly after start year
-                if (newYear <= changeState.startYear) {
-                    const minEnd = changeState.startYear + 1;
-                    this.value = minEnd;
-                    endDisplay.textContent = minEnd;
-                    changeState.endYear = minEnd;
-                } else {
-                    changeState.endYear = newYear;
-                }
-                triggerChangeViewCallback('endYear');
-            });
-        }
+        endSlider.addEventListener('change', function() {
+            const newYear = parseInt(this.value, 10);
+            if (newYear <= changeState.startYear) {
+                const clamped = changeState.startYear + 1;
+                this.value = clamped;
+                if (endDisplay) endDisplay.textContent = clamped;
+                changeState.endYear = clamped;
+            } else {
+                changeState.endYear = newYear;
+            }
+            updateDualRangeFill(startSlider, endSlider, fill);
+            triggerChangeViewCallback('endYear');
+        });
     }
 
     /**
@@ -358,7 +355,8 @@ const FiltersModule = (function() {
     function setChangeState(newState, triggerCallback = false) {
         if (newState.propertyType && newState.propertyType !== changeState.propertyType) {
             changeState.propertyType = newState.propertyType;
-            const radio = document.querySelector(`input[name="change-property-type"][value="${changeState.propertyType}"]`);
+            state.propertyType = newState.propertyType;
+            const radio = document.querySelector(`input[name="property-type"][value="${changeState.propertyType}"]`);
             if (radio) radio.checked = true;
         }
 
@@ -366,7 +364,7 @@ const FiltersModule = (function() {
             changeState.startYear = newState.startYear;
             const slider = document.getElementById('start-year-slider');
             const display = document.getElementById('start-year-value');
-            if (slider) { slider.value = changeState.startYear; updateSliderFill(slider); }
+            if (slider) slider.value = changeState.startYear;
             if (display) display.textContent = changeState.startYear;
         }
 
@@ -374,9 +372,14 @@ const FiltersModule = (function() {
             changeState.endYear = newState.endYear;
             const slider = document.getElementById('end-year-slider');
             const display = document.getElementById('end-year-value');
-            if (slider) { slider.value = changeState.endYear; updateSliderFill(slider); }
+            if (slider) slider.value = changeState.endYear;
             if (display) display.textContent = changeState.endYear;
         }
+
+        const startSlider = document.getElementById('start-year-slider');
+        const endSlider   = document.getElementById('end-year-slider');
+        const fill        = document.getElementById('change-range-fill');
+        if (startSlider && endSlider) updateDualRangeFill(startSlider, endSlider, fill);
 
         if (newState.adjustmentMode && newState.adjustmentMode !== changeState.adjustmentMode) {
             changeState.adjustmentMode = newState.adjustmentMode;
@@ -398,8 +401,7 @@ const FiltersModule = (function() {
     function disable() {
         const controls = document.querySelectorAll(
             '#property-type-filter input, #year-slider, ' +
-            '#change-property-type-filter input, #start-year-slider, #end-year-slider, ' +
-            '#adjustment-mode-filter input'
+            '#start-year-slider, #end-year-slider, #adjustment-mode-filter input'
         );
         controls.forEach(el => el.disabled = true);
     }
@@ -410,8 +412,7 @@ const FiltersModule = (function() {
     function enable() {
         const controls = document.querySelectorAll(
             '#property-type-filter input, #year-slider, ' +
-            '#change-property-type-filter input, #start-year-slider, #end-year-slider, ' +
-            '#adjustment-mode-filter input'
+            '#start-year-slider, #end-year-slider, #adjustment-mode-filter input'
         );
         controls.forEach(el => el.disabled = false);
     }

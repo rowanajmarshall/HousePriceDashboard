@@ -558,6 +558,7 @@
      */
     async function handleFilterChange(event) {
         if (!app.initialized) return;
+        if (TabsModule.getActiveTab() !== 'price') return;
 
         console.log('Filter changed:', event);
 

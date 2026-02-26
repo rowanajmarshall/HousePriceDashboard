@@ -54,14 +54,17 @@
                     <a href="/" class="header-link" onclick="window.location.replace(window.location.origin + window.location.pathname); return false;"><h1>UK House Price Heatmap</h1></a>
                     <p class="subtitle">Explore 30+ years of property prices across the UK</p>
                 </div>
-                <div class="search-box">
-                    <input type="text" id="postcode-search" placeholder="Search postcode..." aria-label="Search postcode">
-                    <button id="search-btn" type="button" aria-label="Search">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="M21 21l-4.35-4.35"></path>
-                        </svg>
-                    </button>
+                <div class="search-container">
+                    <div class="search-box">
+                        <input type="text" id="postcode-search" placeholder="Search city or postcode..." aria-label="Search postcode" autocomplete="off">
+                        <button id="search-btn" type="button" aria-label="Search">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="M21 21l-4.35-4.35"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <ul id="search-autocomplete" class="search-autocomplete" role="listbox" aria-label="Search suggestions"></ul>
                 </div>
                 <nav class="header-nav">
                     <a href="/" class="nav-link active">Map</a>

@@ -19,6 +19,43 @@
         maxYear: 2025
     };
 
+    // Major UK cities: bounding boxes for hash-based navigation (e.g. /#manchester)
+    const CITIES = {
+        'london':        { bounds: [[51.28, -0.51], [51.69,  0.33]], name: 'London' },
+        'manchester':    { bounds: [[53.35, -2.35], [53.60, -1.95]], name: 'Manchester' },
+        'birmingham':    { bounds: [[52.35, -2.05], [52.60, -1.70]], name: 'Birmingham' },
+        'leeds':         { bounds: [[53.70, -1.75], [53.90, -1.40]], name: 'Leeds' },
+        'liverpool':     { bounds: [[53.32, -3.05], [53.52, -2.80]], name: 'Liverpool' },
+        'sheffield':     { bounds: [[53.30, -1.70], [53.50, -1.35]], name: 'Sheffield' },
+        'bristol':       { bounds: [[51.37, -2.75], [51.55, -2.45]], name: 'Bristol' },
+        'edinburgh':     { bounds: [[55.87, -3.40], [55.99, -3.05]], name: 'Edinburgh' },
+        'glasgow':       { bounds: [[55.78, -4.40], [55.93, -4.10]], name: 'Glasgow' },
+        'newcastle':     { bounds: [[54.92, -1.75], [55.05, -1.50]], name: 'Newcastle' },
+        'nottingham':    { bounds: [[52.87, -1.25], [53.07, -1.05]], name: 'Nottingham' },
+        'cardiff':       { bounds: [[51.42, -3.30], [51.55, -3.05]], name: 'Cardiff' },
+        'oxford':        { bounds: [[51.70, -1.30], [51.80, -1.20]], name: 'Oxford' },
+        'cambridge':     { bounds: [[52.17, -0.16], [52.23,  0.15]], name: 'Cambridge' },
+        'brighton':      { bounds: [[50.80, -0.20], [50.87, -0.10]], name: 'Brighton' },
+        'southampton':   { bounds: [[50.88, -1.45], [50.95, -1.35]], name: 'Southampton' },
+        'portsmouth':    { bounds: [[50.78, -1.12], [50.85, -1.05]], name: 'Portsmouth' },
+        'leicester':     { bounds: [[52.58, -1.18], [52.68, -1.09]], name: 'Leicester' },
+        'coventry':      { bounds: [[52.37, -1.58], [52.45, -1.47]], name: 'Coventry' },
+        'plymouth':      { bounds: [[50.36, -4.20], [50.42, -4.10]], name: 'Plymouth' },
+        'exeter':        { bounds: [[50.70, -3.55], [50.74, -3.51]], name: 'Exeter' },
+        'york':          { bounds: [[53.95, -1.10], [54.00, -1.07]], name: 'York' },
+        'norwich':       { bounds: [[52.61,  1.26], [52.65,  1.30]], name: 'Norwich' },
+        'derby':         { bounds: [[52.90, -1.53], [52.95, -1.47]], name: 'Derby' },
+        'wolverhampton': { bounds: [[52.56, -2.16], [52.61, -2.09]], name: 'Wolverhampton' },
+        'swansea':       { bounds: [[51.60, -3.98], [51.65, -3.92]], name: 'Swansea' },
+        'aberdeen':      { bounds: [[57.10, -2.12], [57.20, -2.05]], name: 'Aberdeen' },
+        'bournemouth':   { bounds: [[50.71, -1.90], [50.76, -1.84]], name: 'Bournemouth' },
+        'reading':       { bounds: [[51.44, -1.00], [51.48, -0.97]], name: 'Reading' },
+        'sunderland':    { bounds: [[54.88, -1.41], [54.92, -1.37]], name: 'Sunderland' },
+        'stoke':         { bounds: [[53.00, -2.22], [53.06, -2.13]], name: 'Stoke-on-Trent' },
+        'bradford':      { bounds: [[53.77, -1.80], [53.83, -1.73]], name: 'Bradford' },
+        'luton':         { bounds: [[51.87, -0.43], [51.91, -0.39]], name: 'Luton' },
+    };
+
     /**
      * Get postcode from URL hash (e.g., #N19)
      */
@@ -81,20 +118,36 @@
     }
 
     /**
-     * Navigate to postcode from URL on page load
+     * Update URL hash with city slug (preserves query params)
+     */
+    function updateUrlWithCity(slug) {
+        const search = window.location.search;
+        window.history.pushState({ city: slug }, '', search + '#' + slug);
+    }
+
+    /**
+     * Navigate to a city or postcode from a hash string.
+     * Tries city name first, then falls back to postcode district.
+     */
+    function navigateToHash(hash) {
+        const searchInput = document.getElementById('postcode-search');
+        const city = CITIES[hash.toLowerCase()];
+        if (city) {
+            MapModule.fitBounds(city.bounds);
+            if (searchInput) searchInput.value = city.name;
+            return true;
+        }
+        const found = HeatmapModule.findAndZoomToSector(hash);
+        if (found && searchInput) searchInput.value = hash.toUpperCase();
+        return found;
+    }
+
+    /**
+     * Navigate to postcode or city from URL hash on page load
      */
     function handleUrlPostcode() {
-        const postcode = getPostcodeFromUrl();
-        if (postcode) {
-            const found = HeatmapModule.findAndZoomToSector(postcode);
-            if (found) {
-                // Update search input to show the postcode
-                const searchInput = document.getElementById('postcode-search');
-                if (searchInput) {
-                    searchInput.value = postcode.toUpperCase();
-                }
-            }
-        }
+        const hash = getPostcodeFromUrl();
+        if (hash) navigateToHash(hash);
     }
 
     /**
@@ -104,30 +157,142 @@
         const searchInput = document.getElementById('postcode-search');
         const searchBtn = document.getElementById('search-btn');
         const searchBox = document.querySelector('.search-box');
+        const autocompleteList = document.getElementById('search-autocomplete');
 
         if (!searchInput || !searchBtn) return;
+
+        let activeIndex = -1;
+        let currentSuggestions = [];
+
+        function getSuggestions(query) {
+            if (!query) return [];
+            const q = query.toLowerCase();
+            const results = [];
+
+            // City matches
+            for (const [key, city] of Object.entries(CITIES)) {
+                if (city.name.toLowerCase().startsWith(q) || key.startsWith(q)) {
+                    results.push({ type: 'city', label: city.name, key });
+                    if (results.length >= 4) break;
+                }
+            }
+
+            // Postcode district matches (only if input looks like a postcode)
+            if (/^[a-z]/i.test(query)) {
+                const qUpper = query.toUpperCase().replace(/\s+/g, '');
+                const sectorIds = HeatmapModule.getSectorIds();
+                let added = 0;
+                for (const id of sectorIds) {
+                    if (id.startsWith(qUpper) && added < 5) {
+                        results.push({ type: 'postcode', label: id, key: id });
+                        added++;
+                    }
+                }
+            }
+
+            return results.slice(0, 8);
+        }
+
+        function renderSuggestions(suggestions) {
+            autocompleteList.innerHTML = '';
+            activeIndex = -1;
+
+            if (suggestions.length === 0) {
+                autocompleteList.classList.remove('visible');
+                return;
+            }
+
+            suggestions.forEach(function(s, i) {
+                const li = document.createElement('li');
+                li.setAttribute('role', 'option');
+
+                const iconSvg = s.type === 'city'
+                    ? '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>'
+                    : '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
+
+                li.innerHTML = iconSvg +
+                    '<span class="autocomplete-label">' + s.label + '</span>' +
+                    '<span class="autocomplete-type">' + (s.type === 'city' ? 'City' : 'Postcode') + '</span>';
+
+                li.addEventListener('mousedown', function(e) {
+                    e.preventDefault(); // Prevent input blur before click fires
+                    searchInput.value = s.label;
+                    closeAutocomplete();
+                    performSearch();
+                });
+
+                autocompleteList.appendChild(li);
+            });
+
+            autocompleteList.classList.add('visible');
+            currentSuggestions = suggestions;
+        }
+
+        function closeAutocomplete() {
+            autocompleteList.classList.remove('visible');
+            activeIndex = -1;
+        }
+
+        function setActiveItem(index) {
+            const items = autocompleteList.querySelectorAll('li');
+            items.forEach(function(li) { li.classList.remove('active'); });
+            if (index >= 0 && index < items.length) {
+                items[index].classList.add('active');
+                searchInput.value = currentSuggestions[index].label;
+            }
+            activeIndex = index;
+        }
 
         function performSearch() {
             const term = searchInput.value.trim();
             if (!term) return;
 
+            closeAutocomplete();
+
+            // Try city name first
+            const city = CITIES[term.toLowerCase()];
+            if (city) {
+                MapModule.fitBounds(city.bounds);
+                searchBox.classList.remove('error');
+                searchInput.blur();
+                updateUrlWithCity(term.toLowerCase());
+                return;
+            }
+
+            // Try city display name match (e.g. "London" not just "london")
+            const cityByName = Object.entries(CITIES).find(([, c]) => c.name.toLowerCase() === term.toLowerCase());
+            if (cityByName) {
+                MapModule.fitBounds(cityByName[1].bounds);
+                searchBox.classList.remove('error');
+                searchInput.blur();
+                updateUrlWithCity(cityByName[0]);
+                return;
+            }
+
             const found = HeatmapModule.findAndZoomToSector(term);
 
-            // Show feedback
             if (found) {
                 searchBox.classList.remove('error');
                 searchInput.blur();
                 updateUrlWithPostcode(term);
             } else {
                 searchBox.classList.add('error');
-                // Remove error class after a moment
                 setTimeout(() => searchBox.classList.remove('error'), 1500);
             }
         }
 
-        // Search on Enter key
+        // Search on Enter key; arrow keys navigate suggestions
         searchInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
+            const items = autocompleteList.querySelectorAll('li');
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setActiveItem(Math.min(activeIndex + 1, items.length - 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActiveItem(Math.max(activeIndex - 1, -1));
+            } else if (e.key === 'Escape') {
+                closeAutocomplete();
+            } else if (e.key === 'Enter') {
                 e.preventDefault();
                 performSearch();
             }
@@ -136,9 +301,17 @@
         // Search on button click
         searchBtn.addEventListener('click', performSearch);
 
-        // Clear error state on input
+        // Build autocomplete suggestions on input
         searchInput.addEventListener('input', function() {
             searchBox.classList.remove('error');
+            const suggestions = getSuggestions(searchInput.value.trim());
+            renderSuggestions(suggestions);
+        });
+
+        // Close dropdown when focus leaves the search area
+        searchInput.addEventListener('blur', function() {
+            // Small delay so mousedown on a suggestion fires first
+            setTimeout(closeAutocomplete, 150);
         });
 
         // Handle browser back/forward navigation
@@ -175,16 +348,19 @@
 
             updateControlsSummary();
 
-            // Handle postcode hash
-            if (e.state && e.state.postcode) {
+            // Handle postcode/city hash
+            if (e.state && e.state.city) {
+                const city = CITIES[e.state.city];
+                if (city) {
+                    MapModule.fitBounds(city.bounds);
+                    searchInput.value = city.name;
+                }
+            } else if (e.state && e.state.postcode) {
                 HeatmapModule.findAndZoomToSector(e.state.postcode);
                 searchInput.value = e.state.postcode.toUpperCase();
             } else {
-                const postcode = getPostcodeFromUrl();
-                if (postcode) {
-                    HeatmapModule.findAndZoomToSector(postcode);
-                    searchInput.value = postcode.toUpperCase();
-                }
+                const hash = getPostcodeFromUrl();
+                if (hash) navigateToHash(hash);
             }
         });
     }

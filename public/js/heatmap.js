@@ -109,11 +109,11 @@ const HeatmapModule = (function() {
         const stats = DataLoader.getPriceStats(sectorId, currentYear, currentPropertyType);
 
         let fillColor = colors.noData;
-        let fillOpacity = 0.5; // Lower opacity for no-data
+        let fillOpacity = 0.4; // Lower opacity for no-data
 
         if (stats && stats.avg && currentPriceRange) {
             fillColor = getColor(stats.avg, currentPriceRange.min, currentPriceRange.max);
-            fillOpacity = 0.7;
+            fillOpacity = 0.6;
         }
 
         return {
@@ -155,7 +155,7 @@ const HeatmapModule = (function() {
                     color: '#333333',  // Dark border on hover for contrast
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.85
+                    fillOpacity: 0.75
                 });
                 layer.bringToFront();
             },
@@ -257,7 +257,7 @@ const HeatmapModule = (function() {
         );
 
         let fillColor = changeColors.noData;
-        let fillOpacity = 0.5;
+        let fillOpacity = 0.4;
 
         if (change && currentChangeRange) {
             fillColor = getChangeColor(
@@ -265,7 +265,7 @@ const HeatmapModule = (function() {
                 currentChangeRange.min,
                 currentChangeRange.max
             );
-            fillOpacity = 0.7;
+            fillOpacity = 0.6;
         }
 
         return {
@@ -490,6 +490,22 @@ const HeatmapModule = (function() {
     }
 
     /**
+     * Get all available postcode district IDs from the loaded GeoJSON layer
+     * @returns {string[]} Array of district IDs (e.g. ['SW1', 'M1', ...])
+     */
+    function getSectorIds() {
+        const ids = [];
+        if (geoJsonLayer) {
+            geoJsonLayer.eachLayer(function(layer) {
+                if (layer.feature && layer.feature.properties && layer.feature.properties.id) {
+                    ids.push(layer.feature.properties.id);
+                }
+            });
+        }
+        return ids;
+    }
+
+    /**
      * Destroy the heatmap layer
      */
     function destroy() {
@@ -516,6 +532,7 @@ const HeatmapModule = (function() {
         getViewMode,
         getState,
         findAndZoomToSector,
+        getSectorIds,
         destroy
     };
 })();

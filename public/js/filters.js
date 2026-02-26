@@ -21,6 +21,15 @@ const FiltersModule = (function() {
     let onChangeCallback = null;
     let onChangeViewCallback = null;
 
+    /**
+     * Update the slider track fill to reflect current position
+     * @param {HTMLInputElement} slider
+     */
+    function updateSliderFill(slider) {
+        const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+        slider.style.background = `linear-gradient(to right, var(--color-accent) ${pct}%, var(--color-border) ${pct}%)`;
+    }
+
     // Property type labels
     const propertyTypeLabels = {
         'A': 'All Types',
@@ -123,10 +132,12 @@ const FiltersModule = (function() {
 
         // Update display
         display.textContent = defaultYear;
+        updateSliderFill(slider);
 
         // Add input listener (fires continuously while dragging)
         slider.addEventListener('input', function() {
             display.textContent = this.value;
+            updateSliderFill(this);
         });
 
         // Add change listener (fires when released)
@@ -184,9 +195,11 @@ const FiltersModule = (function() {
             startSlider.max = maxYear;
             startSlider.value = changeState.startYear;
             startDisplay.textContent = changeState.startYear;
+            updateSliderFill(startSlider);
 
             startSlider.addEventListener('input', function() {
                 startDisplay.textContent = this.value;
+                updateSliderFill(this);
             });
 
             startSlider.addEventListener('change', function() {
@@ -213,9 +226,11 @@ const FiltersModule = (function() {
             endSlider.max = maxYear;
             endSlider.value = changeState.endYear;
             endDisplay.textContent = changeState.endYear;
+            updateSliderFill(endSlider);
 
             endSlider.addEventListener('input', function() {
                 endDisplay.textContent = this.value;
+                updateSliderFill(this);
             });
 
             endSlider.addEventListener('change', function() {
@@ -322,7 +337,7 @@ const FiltersModule = (function() {
             // Update slider
             const slider = document.getElementById('year-slider');
             const display = document.getElementById('year-value');
-            if (slider) slider.value = state.year;
+            if (slider) { slider.value = state.year; updateSliderFill(slider); }
             if (display) display.textContent = state.year;
         }
 
@@ -351,7 +366,7 @@ const FiltersModule = (function() {
             changeState.startYear = newState.startYear;
             const slider = document.getElementById('start-year-slider');
             const display = document.getElementById('start-year-value');
-            if (slider) slider.value = changeState.startYear;
+            if (slider) { slider.value = changeState.startYear; updateSliderFill(slider); }
             if (display) display.textContent = changeState.startYear;
         }
 
@@ -359,7 +374,7 @@ const FiltersModule = (function() {
             changeState.endYear = newState.endYear;
             const slider = document.getElementById('end-year-slider');
             const display = document.getElementById('end-year-value');
-            if (slider) slider.value = changeState.endYear;
+            if (slider) { slider.value = changeState.endYear; updateSliderFill(slider); }
             if (display) display.textContent = changeState.endYear;
         }
 

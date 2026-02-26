@@ -355,6 +355,13 @@
             margin-bottom: var(--spacing-md);
         }
 
+        .area-summary {
+            color: var(--color-text);
+            font-size: var(--font-size-md);
+            line-height: 1.6;
+            margin-bottom: var(--spacing-xl);
+        }
+
         .area-attribution {
             margin-top: var(--spacing-lg);
             padding-top: var(--spacing-md);
@@ -435,6 +442,9 @@
 
                 <!-- Content (shown after data loads) -->
                 <div id="area-content" style="display: none;">
+
+                    <!-- Summary text (populated by JS, indexed by Google) -->
+                    <p class="area-summary" id="area-summary"></p>
 
                     <!-- Controls -->
                     <div class="area-controls">

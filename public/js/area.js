@@ -99,6 +99,40 @@
         });
     }
 
+    function renderSummary() {
+        if (isEmbed) return;
+        const el = document.getElementById('area-summary');
+        if (!el) return;
+
+        const fmt = p => '\u00a3' + Math.round(p).toLocaleString('en-GB');
+
+        let earliest = null, latest = null, peak = null;
+        for (let y = START_YEAR; y <= END_YEAR; y++) {
+            const yd = allYearData[y];
+            if (!yd) continue;
+            let td = yd['A'] || computeAllAvg(yd);
+            if (!td || !td.avg) continue;
+            if (!earliest) earliest = { year: y, price: td.avg };
+            latest = { year: y, price: td.avg };
+            if (!peak || td.avg > peak.price) peak = { year: y, price: td.avg };
+        }
+
+        if (!latest) return;
+
+        let text = 'The average house price in ' + sectorCode + ' was ' + fmt(latest.price) + ' in ' + latest.year;
+
+        if (earliest && earliest.year < latest.year) {
+            const pct = Math.round((latest.price - earliest.price) / earliest.price * 100);
+            text += ', ' + (pct >= 0 ? 'up ' + pct : 'down ' + Math.abs(pct)) + '% from ' + fmt(earliest.price) + ' in ' + earliest.year;
+        }
+
+        if (peak && peak.year !== latest.year) {
+            text += '. Prices peaked at ' + fmt(peak.price) + ' in ' + peak.year;
+        }
+
+        el.textContent = text + '.';
+    }
+
     function getLatestAvgPrice() {
         for (let y = END_YEAR; y >= START_YEAR; y--) {
             const yd = allYearData[y];
@@ -195,6 +229,7 @@
                 }
             }
 
+            renderSummary();
             setupControls();
             renderPriceChart();
             renderMedianChart();

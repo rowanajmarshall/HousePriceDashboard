@@ -7,7 +7,8 @@ const DataLoader = (function() {
     const cache = {
         boundaries: null,
         prices: {}, // Keyed by year
-        inflation: null // CPI data
+        inflation: null, // CPI data
+        districtNames: null // { "AL1": "St Albans", ... }
     };
 
     // Configuration
@@ -347,6 +348,38 @@ const DataLoader = (function() {
     }
 
     /**
+     * Load human-readable names for postcode districts
+     * @returns {Promise<Object>} Map of district code → name
+     */
+    async function loadDistrictNames() {
+        if (cache.districtNames) {
+            return cache.districtNames;
+        }
+
+        try {
+            const response = await fetch('data/district-names.json');
+            if (!response.ok) {
+                throw new Error(`Failed to load district names: ${response.status}`);
+            }
+            cache.districtNames = await response.json();
+            return cache.districtNames;
+        } catch (error) {
+            console.error('Error loading district names:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get the human-readable name for a postcode district
+     * @param {string} code - District code (e.g. "AL1")
+     * @returns {string|null} Name or null if not loaded / not found
+     */
+    function getDistrictName(code) {
+        if (!cache.districtNames) return null;
+        return cache.districtNames[code] || null;
+    }
+
+    /**
      * Check if data is loaded for a specific year
      * @param {number} year - Year to check
      * @returns {boolean}
@@ -390,6 +423,8 @@ const DataLoader = (function() {
         loadBoundaries,
         loadPriceData,
         loadInflation,
+        loadDistrictNames,
+        getDistrictName,
         preloadYears,
         getPriceStats,
         getAllPrices,

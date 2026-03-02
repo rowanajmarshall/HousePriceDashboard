@@ -493,12 +493,13 @@
             });
             console.log('URL state applied:', urlState);
 
-            // Load boundaries, initial price data, and inflation data
+            // Load boundaries, initial price data, inflation data, and district names
             console.log('Loading data...');
             const [boundaries] = await Promise.all([
                 DataLoader.loadBoundaries(),
                 DataLoader.loadPriceData(urlState.year),
-                DataLoader.loadInflation()
+                DataLoader.loadInflation(),
+                DataLoader.loadDistrictNames()
             ]);
             console.log('Data loaded');
 

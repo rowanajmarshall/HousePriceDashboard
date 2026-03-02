@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Postcode Districts | UK House Price Heatmap</title>
+
+    <!-- SEO -->
+    <meta name="description" content="Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes from 1995 to 2025.">
+    <link rel="canonical" href="https://housepricedashboard.co.uk/browse">
+
+    <!-- Social Media Preview -->
+    <meta property="og:title" content="Browse Postcode Districts | UK House Price Heatmap">
+    <meta property="og:description" content="Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes.">
+    <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Browse Postcode Districts | UK House Price Heatmap">
+    <meta name="twitter:description" content="Browse and compare house prices for every UK postcode district.">
+    <meta name="twitter:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="css/main.css?v=20">
+
+    <style>
+        .browse-main {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--color-background);
+            padding: var(--spacing-xl) var(--spacing-lg);
+        }
+
+        .browse-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .browse-heading {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        /* Controls bar */
+        .browse-controls {
+            display: flex;
+            gap: var(--spacing-lg);
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+            background: var(--color-surface);
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .controls-label {
+            font-size: var(--font-size-sm);
+            font-weight: 600;
+            color: var(--color-text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .year-select {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            background: var(--color-surface);
+            font-family: var(--font-family);
+            font-size: var(--font-size-sm);
+            color: var(--color-text);
+            cursor: pointer;
+        }
+
+        .mode-toggle {
+            display: flex;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .mode-btn {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: none;
+            background: var(--color-surface);
+            cursor: pointer;
+            font-size: var(--font-size-sm);
+            font-weight: 500;
+            color: var(--color-text-light);
+            transition: all 0.15s;
+            font-family: var(--font-family);
+        }
+
+        .mode-btn + .mode-btn {
+            border-left: 1px solid var(--color-border);
+        }
+
+        .mode-btn.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        /* Summary line */
+        .browse-summary {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-light);
+            margin-bottom: var(--spacing-md);
+        }
+
+        /* Loading / error */
+        .browse-loading {
+            text-align: center;
+            padding: 80px var(--spacing-xl);
+            color: var(--color-text-light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .browse-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-md);
+            display: none;
+        }
+
+        /* Table */
+        .browse-table-wrap {
+            background: var(--color-surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .browse-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--font-size-sm);
+        }
+
+        .browse-table thead {
+            background: var(--color-primary);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .browse-table th {
+            padding: var(--spacing-sm) var(--spacing-md);
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .sort-th {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sort-th:hover {
+            background: var(--color-secondary);
+        }
+
+        /* Sort arrows via pseudo-element */
+        .sort-th::after {
+            content: ' ↕';
+            opacity: 0.4;
+            font-size: 10px;
+        }
+
+        .sort-th.sort-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
+        .sort-th.sort-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+
+        .browse-table td {
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-bottom: 1px solid var(--color-border);
+            color: var(--color-text);
+        }
+
+        .browse-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .browse-table tbody tr:hover td {
+            background: #f0f4f8;
+        }
+
+        .col-rank {
+            color: var(--color-text-light);
+            width: 50px;
+            text-align: right;
+        }
+
+        .col-code a {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .col-code a:hover {
+            text-decoration: underline;
+        }
+
+        .col-name {
+            color: var(--color-text-light);
+        }
+
+        .col-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .row-no-data td {
+            color: var(--color-text-light);
+            opacity: 0.5;
+        }
+
+        /* Attribution */
+        .browse-attribution {
+            margin-top: var(--spacing-lg);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--color-border);
+            font-size: var(--font-size-sm);
+            color: var(--color-text-light);
+        }
+
+        .browse-attribution a {
+            color: var(--color-accent);
+            text-decoration: none;
+        }
+
+        .browse-attribution a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .browse-main {
+                padding: var(--spacing-md);
+            }
+
+            .browse-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: var(--spacing-md);
+            }
+
+            .browse-heading {
+                font-size: 22px;
+            }
+
+            .col-name {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-titles">
+                    <a href="/" class="header-link">
+                        <h1>UK House Price Heatmap</h1>
+                    </a>
+                    <p class="subtitle">Postcode district league table</p>
+                </div>
+                <nav class="header-nav">
+                    <a href="/" class="nav-link">Map</a>
+                    <a href="/contact.html" class="nav-link">Contact</a>
+                    <a href="/attribution.html" class="nav-link">Attributions</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="browse-main">
+            <div class="browse-container">
+
+                <h1 class="browse-heading">Browse All Districts</h1>
+
+                <!-- Error state -->
+                <div class="browse-error" id="browse-error"></div>
+
+                <!-- Controls -->
+                <div class="browse-controls">
+                    <div class="controls-group">
+                        <span class="controls-label">Year</span>
+                        <select class="year-select" id="browse-year">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div class="controls-group">
+                        <span class="controls-label">Type</span>
+                        <div class="mode-toggle">
+                            <button class="mode-btn active" data-type="A">All</button>
+                            <button class="mode-btn" data-type="D">Detached</button>
+                            <button class="mode-btn" data-type="S">Semi</button>
+                            <button class="mode-btn" data-type="T">Terraced</button>
+                            <button class="mode-btn" data-type="F">Flat</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <p class="browse-summary" id="browse-summary">Loading…</p>
+
+                <!-- Loading state -->
+                <div class="browse-loading" id="browse-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading district data…</p>
+                </div>
+
+                <!-- Table (shown after load) -->
+                <div id="browse-content" style="display: none;">
+                    <div class="browse-table-wrap">
+                        <table class="browse-table" aria-label="House price league table by postcode district">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th class="sort-th" data-col="code">District</th>
+                                    <th class="sort-th" data-col="name">Area Name</th>
+                                    <th class="sort-th col-num" data-col="avg">Avg Price</th>
+                                    <th class="sort-th col-num" data-col="median">Median Price</th>
+                                    <th class="sort-th col-num" data-col="count">Sales</th>
+                                </tr>
+                            </thead>
+                            <tbody id="browse-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Attribution -->
+                    <div class="browse-attribution">
+                        <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Prices are nominal.</p>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Application JS -->
+    <script src="js/data-loader.js?v=20"></script>
+    <script src="js/browse.js?v=1"></script>
+
+    <!-- Populate year dropdown before browse.js init -->
+    <script>
+        (function () {
+            const sel = document.getElementById('browse-year');
+            for (let y = 2025; y >= 1995; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                sel.appendChild(opt);
+            }
+        })();
+    </script>
+
+    <!-- 100% privacy-first analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>

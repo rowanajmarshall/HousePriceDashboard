@@ -101,7 +101,8 @@ const TooltipModule = (function() {
         tooltip.style.display = 'block';
 
         // Populate content
-        tooltip.querySelector('.tooltip-title').textContent = sectorCode;
+        const name = DataLoader.getDistrictName(sectorCode);
+        tooltip.querySelector('.tooltip-title').textContent = name ? `${name} – ${sectorCode}` : sectorCode;
         tooltip.querySelector('.tooltip-subtitle').textContent =
             `${FiltersModule.getPropertyTypeLabel(filterState.propertyType)} - ${filterState.year}`;
 
@@ -172,7 +173,8 @@ const TooltipModule = (function() {
         const modeLabel = isReal ? ' (Real)' : '';
 
         // Populate content
-        tooltip.querySelector('.tooltip-title').textContent = sectorCode;
+        const name = DataLoader.getDistrictName(sectorCode);
+        tooltip.querySelector('.tooltip-title').textContent = name ? `${name} – ${sectorCode}` : sectorCode;
         tooltip.querySelector('.tooltip-subtitle').textContent =
             `${FiltersModule.getPropertyTypeLabel(changeState.propertyType)} - ${changeState.startYear} to ${changeState.endYear}${modeLabel}`;
 

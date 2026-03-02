@@ -40,6 +40,7 @@
     let allYearData = null;  // { [year]: sectorData | null }
     let inflationData = null;
     let isReal = false;
+    let districtName = null;
 
     // ------------------------------------------------------------------ SEO helpers
 
@@ -76,10 +77,11 @@
     }
 
     function applyMetaTags(code, description) {
-        const title = code + ' House Prices | UK House Price Heatmap';
+        const label = districtName ? districtName + ' - ' + code : code;
+        const title = label + ' House Prices | UK House Price Heatmap';
         const pageUrl = 'https://housepricedashboard.co.uk/area/' + code;
 
-        document.title = code + ' \u2014 House Price History | UK House Price Heatmap';
+        document.title = title;
         setCanonical(pageUrl);
 
         setMetaTag('meta[name="description"]', 'content', description);
@@ -94,7 +96,7 @@
             '@type': 'BreadcrumbList',
             'itemListElement': [
                 { '@type': 'ListItem', 'position': 1, 'name': 'UK House Price Heatmap', 'item': 'https://housepricedashboard.co.uk/' },
-                { '@type': 'ListItem', 'position': 2, 'name': code + ' House Prices', 'item': pageUrl }
+                { '@type': 'ListItem', 'position': 2, 'name': label + ' House Prices', 'item': pageUrl }
             ]
         });
     }
@@ -153,11 +155,9 @@
             return;
         }
 
-        headingEl.textContent = sectorCode + ' \u2014 House Price History';
-
         // Set initial meta tags with template description (updated with real data after load)
         if (!isEmbed) {
-            applyMetaTags(sectorCode, 'House price history for ' + sectorCode + ' postcode district \u2014 explore average and median prices from 1995 to 2025 for detached, semi-detached, terraced and flat properties.');
+            applyMetaTags(sectorCode, 'House price history for the ' + sectorCode + ' postcode district \u2014 explore average and median prices from 1995 to 2025 for detached, semi-detached, terraced and flat properties.');
         }
 
         // Apply embed mode
@@ -198,11 +198,15 @@
         try {
             const promises = [
                 ...YEARS.map(y => DataLoader.loadPriceData(y).catch(() => null)),
-                DataLoader.loadInflation()
+                DataLoader.loadInflation(),
+                fetch('data/district-names.json').then(r => r.json()).catch(() => ({}))
             ];
             const results = await Promise.all(promises);
 
             inflationData = results[YEARS.length];
+            const districtNamesMap = results[YEARS.length + 1] || {};
+            districtName = districtNamesMap[sectorCode] || null;
+            headingEl.textContent = districtName ? districtName + ' - ' + sectorCode : sectorCode;
 
             allYearData = {};
             YEARS.forEach((year, i) => {
@@ -225,7 +229,8 @@
                 const latest = getLatestAvgPrice();
                 if (latest) {
                     const priceStr = '\u00a3' + latest.price.toLocaleString('en-GB');
-                    applyMetaTags(sectorCode, sectorCode + ' house prices: average ' + priceStr + ' (' + latest.year + '). Explore 30 years of property price history (1995\u20132025) including detached, semi-detached, terraced and flat homes. Data from UK Land Registry.');
+                    const locationStr = districtName ? districtName + ' (' + sectorCode + ')' : sectorCode;
+                    applyMetaTags(sectorCode, locationStr + ' house prices: average ' + priceStr + ' (' + latest.year + '). Explore 30 years of property price history (1995\u20132025) including detached, semi-detached, terraced and flat homes. Data from UK Land Registry.');
                 }
             }
 

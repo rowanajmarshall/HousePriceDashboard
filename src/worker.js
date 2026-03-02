@@ -55,11 +55,20 @@ export default {
 
         if (/^\/area\/[^/]+\/?$/.test(url.pathname)) {
             const code = url.pathname.split('/')[2].toUpperCase();
-            const areaName = getAreaName(code);
-            const location = areaName ? `${code} (${areaName})` : code;
 
-            const title = `${location} House Prices | UK House Price Heatmap`;
-            const description = `${location} house prices from 1995 to 2024. Explore average prices, median values and transaction volumes for the ${code} postcode district.`;
+            const dnResp = await env.ASSETS.fetch(url.origin + '/data/district-names.json');
+            const districtNames = dnResp.ok ? await dnResp.json() : {};
+            const specificName = districtNames[code] || null;
+            const areaName = getAreaName(code);
+
+            // Prefer specific district name (e.g. "Lynmouth"), fall back to area name (e.g. "Exeter")
+            const placeName = specificName || areaName;
+            const label = specificName ? `${specificName} - ${code}` : (areaName ? `${code} (${areaName})` : code);
+
+            const title = `${label} House Prices | UK House Price Heatmap`;
+            const description = placeName
+                ? `${placeName} (${code}) house prices from 1995 to 2025. Explore average and median prices, transaction volumes and price trends for the ${code} postcode district.`
+                : `${code} house prices from 1995 to 2025. Explore average and median prices, transaction volumes and price trends for the ${code} postcode district.`;
             const canonical = `https://housepricedashboard.co.uk/area/${code}`;
 
             const response = await env.ASSETS.fetch(url.origin + '/area-page.html');

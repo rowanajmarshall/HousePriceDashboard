@@ -35,18 +35,42 @@
             margin: 0 auto;
         }
 
+        .area-back-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-lg);
+        }
+
         .area-back {
             display: inline-flex;
             align-items: center;
             gap: var(--spacing-sm);
             color: var(--color-accent);
             text-decoration: none;
-            margin-bottom: var(--spacing-lg);
             font-size: var(--font-size-sm);
         }
 
         .area-back:hover {
             text-decoration: underline;
+        }
+
+        .area-compare-link {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            color: var(--color-text-light);
+            text-decoration: none;
+            font-size: var(--font-size-sm);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            transition: all 0.15s;
+        }
+
+        .area-compare-link:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
         }
 
         .area-heading {
@@ -422,12 +446,22 @@
         <!-- Main Content -->
         <main class="area-main">
             <div class="area-container">
-                <a href="/" class="area-back">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                    Back to map
-                </a>
+                <div class="area-back-row">
+                    <a href="/" class="area-back">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        Back to map
+                    </a>
+                    <a id="compare-link" href="/compare" class="area-compare-link">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        Compare
+                    </a>
+                </div>
 
                 <h1 class="area-heading" id="area-heading">Loading...</h1>
 
@@ -579,6 +613,16 @@
     <!-- Application JS -->
     <script src="js/data-loader.js?v=20"></script>
     <script src="js/area.js?v=1"></script>
+    <script>
+        (function() {
+            var pathParts = window.location.pathname.replace(/\/$/, '').split('/');
+            var pathCode = (pathParts[pathParts.length - 1] || '').toUpperCase();
+            var POSTCODE_RE = /^[A-Z]{1,2}\d{1,2}[A-Z]?$/;
+            var code = POSTCODE_RE.test(pathCode) ? pathCode : (new URLSearchParams(window.location.search).get('code') || '').toUpperCase();
+            var link = document.getElementById('compare-link');
+            if (link && code) link.href = '/compare?areas=' + code;
+        })();
+    </script>
 
     <!-- 100% privacy-first analytics -->
     <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Areas | UK House Price Heatmap</title>
+    <base href="/">
+
+    <!-- SEO -->
+    <meta name="description" content="Compare house price history across multiple UK postcode districts — side-by-side charts and statistics from 1995 to 2025.">
+
+    <!-- Social Media Preview -->
+    <meta property="og:title" content="Compare Areas | UK House Price Heatmap">
+    <meta property="og:description" content="Compare house price history across multiple UK postcode districts.">
+    <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Compare Areas | UK House Price Heatmap">
+    <meta name="twitter:description" content="Compare house price history across multiple UK postcode districts.">
+    <meta name="twitter:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="css/main.css?v=20">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-titles">
+                    <a href="/" class="header-link">
+                        <h1>UK House Price Heatmap</h1>
+                    </a>
+                    <p class="subtitle">Area price comparison</p>
+                </div>
+                <nav class="header-nav">
+                    <a href="/" class="nav-link">Map</a>
+                    <a href="/contact.html" class="nav-link">Contact</a>
+                    <a href="/attribution.html" class="nav-link">Attributions</a>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="compare-main">
+            <div class="compare-container">
+
+                <!-- Loading state -->
+                <div class="compare-loading" id="compare-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading price data&hellip;</p>
+                </div>
+
+                <!-- Empty state -->
+                <div class="compare-empty" id="compare-empty" style="display:none;">
+                    <h2>No areas selected</h2>
+                    <p>Use the map to select areas to compare, then click &ldquo;Compare &rarr;&rdquo;.</p>
+                    <a href="/">Back to map</a>
+                </div>
+
+                <!-- Content -->
+                <div id="compare-content" style="display:none;">
+
+                    <!-- Area chips row -->
+                    <div class="compare-chips-row" id="compare-chips-row"></div>
+
+                    <!-- Single-area prompt -->
+                    <div class="compare-prompt-banner" id="compare-prompt" style="display:none;">
+                        Add another area to compare using the search above.
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="compare-controls">
+                        <div style="display:flex;align-items:center;gap:var(--spacing-sm);">
+                            <label class="controls-label" for="compare-prop-type">Type</label>
+                            <select id="compare-prop-type" class="compare-select">
+                                <option value="A">All Types</option>
+                                <option value="D">Detached</option>
+                                <option value="S">Semi-Detached</option>
+                                <option value="T">Terraced</option>
+                                <option value="F">Flats/Maisonettes</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:var(--spacing-sm);">
+                            <span class="controls-label">Price</span>
+                            <div class="compare-mode-toggle">
+                                <button class="compare-mode-btn active" data-mode="nominal">Nominal</button>
+                                <button class="compare-mode-btn" data-mode="real">Real (2025 &pound;)</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stats grid -->
+                    <div class="compare-stats-grid" id="compare-stats-grid"></div>
+
+                    <!-- Chart 1: Average Price -->
+                    <div class="compare-chart-section">
+                        <h2>Average Price History</h2>
+                        <div class="compare-chart-wrapper">
+                            <canvas id="compare-price-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: Median Price -->
+                    <div class="compare-chart-section">
+                        <h2>Median Price History</h2>
+                        <div class="compare-chart-wrapper">
+                            <canvas id="compare-median-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 3: Transaction Volume -->
+                    <div class="compare-chart-section">
+                        <h2>Transaction Volume</h2>
+                        <div class="compare-chart-wrapper">
+                            <canvas id="compare-volume-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Attribution -->
+                    <div class="area-attribution">
+                        <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Inflation data: <a href="https://www.ons.gov.uk/" target="_blank" rel="noopener">ONS CPI series D7BT</a>. Real prices expressed in 2025 pounds.</p>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+
+    <!-- Application JS -->
+    <script src="js/data-loader.js?v=20"></script>
+    <script src="js/compare.js?v=1"></script>
+
+    <!-- 100% privacy-first analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>

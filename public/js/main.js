@@ -558,6 +558,9 @@
             // Initialize mobile collapse (before async operations)
             initMobileCollapse();
 
+            // Initialize compare tray
+            initCompareTray();
+
             // Initialize share button
             initShareButton();
 
@@ -856,6 +859,99 @@
         `;
     }
 
+    // ─── Compare Module ────────────────────────────────────────────────────
+    const CompareModule = (function() {
+        const MAX_AREAS = 4;
+        const STORAGE_KEY = 'compare-areas';
+        const COLORS = ['#3498db', '#e67e22', '#27ae60', '#9b59b6'];
+
+        function get() {
+            try {
+                return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function save(areas) {
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(areas));
+        }
+
+        function add(code) {
+            const areas = get();
+            if (areas.includes(code) || areas.length >= MAX_AREAS) return false;
+            areas.push(code);
+            save(areas);
+            renderTray();
+            return true;
+        }
+
+        function remove(code) {
+            const areas = get().filter(c => c !== code);
+            save(areas);
+            renderTray();
+        }
+
+        function clear() {
+            save([]);
+            renderTray();
+        }
+
+        function navigate() {
+            const areas = get();
+            if (areas.length < 1) return;
+            window.location.href = '/compare?areas=' + areas.join(',');
+        }
+
+        function colorFor(code) {
+            const areas = get();
+            const idx = areas.indexOf(code);
+            return idx >= 0 ? COLORS[idx % COLORS.length] : COLORS[0];
+        }
+
+        function renderTray() {
+            const tray = document.getElementById('compare-tray');
+            const chipsEl = document.getElementById('compare-tray-chips');
+            const goBtn = document.getElementById('compare-tray-go');
+            if (!tray || !chipsEl || !goBtn) return;
+
+            const areas = get();
+
+            if (areas.length === 0) {
+                tray.hidden = true;
+                return;
+            }
+
+            tray.hidden = false;
+            chipsEl.innerHTML = '';
+
+            areas.forEach(function(code, i) {
+                const chip = document.createElement('span');
+                chip.className = 'compare-chip';
+                chip.style.borderColor = COLORS[i % COLORS.length];
+                chip.innerHTML =
+                    '<span class="compare-chip-dot" style="background:' + COLORS[i % COLORS.length] + '"></span>' +
+                    '<span class="compare-chip-label">' + code + '</span>' +
+                    '<button class="compare-chip-remove" aria-label="Remove ' + code + '">&times;</button>';
+                chip.querySelector('.compare-chip-remove').addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    CompareModule.remove(code);
+                    // update tooltip compare button state if active
+                    const activeCompareBtn = document.querySelector('#active-tooltip .compare-btn');
+                    if (activeCompareBtn && activeCompareBtn.dataset.code === code) {
+                        activeCompareBtn.textContent = '+ Compare';
+                        activeCompareBtn.classList.remove('added');
+                    }
+                });
+                chipsEl.appendChild(chip);
+            });
+
+            goBtn.disabled = areas.length < 2;
+        }
+
+        return { get, add, remove, clear, navigate, colorFor, renderTray };
+    })();
+
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
@@ -868,6 +964,33 @@
         MapModule.invalidateSize();
     });
 
+    /**
+     * Initialize the comparison tray
+     */
+    function initCompareTray() {
+        const goBtn = document.getElementById('compare-tray-go');
+        const clearBtn = document.getElementById('compare-tray-clear');
+
+        if (goBtn) {
+            goBtn.addEventListener('click', function() {
+                CompareModule.navigate();
+            });
+        }
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                CompareModule.clear();
+                // Reset all compare buttons in active tooltip
+                document.querySelectorAll('#active-tooltip .compare-btn').forEach(function(btn) {
+                    btn.textContent = '+ Compare';
+                    btn.classList.remove('added');
+                });
+            });
+        }
+
+        // Render initial state (in case sessionStorage has areas from a previous visit)
+        CompareModule.renderTray();
+    }
+
     // Expose app for debugging
     window.HousePriceApp = {
         DataLoader,
@@ -875,6 +998,8 @@
         HeatmapModule,
         FiltersModule,
         TabsModule,
-        TooltipModule
+        TooltipModule,
+        CompareModule
     };
+    window.CompareModule = CompareModule;
 })();

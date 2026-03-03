@@ -258,6 +258,7 @@
                 </svg>
                 History
             </a>
+            <button class="compare-btn" aria-label="Add to comparison">+ Compare</button>
         </div>
         <div class="tooltip-footer">
             <a href="https://buymeacoffee.com/rowanajmarshall" target="_blank" rel="noopener">Find this useful? Buy me a coffee ☕</a>
@@ -280,6 +281,14 @@
                 <p class="modal-hint">Recommended size: 800 × 500px. Resize freely — it adapts.</p>
             </div>
         </div>
+    </div>
+
+    <!-- Compare Tray -->
+    <div id="compare-tray" class="compare-tray" hidden>
+        <span class="compare-tray-label">Compare:</span>
+        <div id="compare-tray-chips"></div>
+        <button id="compare-tray-go" class="compare-tray-go" disabled>Compare &#8594;</button>
+        <button id="compare-tray-clear" class="compare-tray-clear">Clear</button>
     </div>
 
     <!-- Leaflet JS -->

@@ -141,6 +141,32 @@ const TooltipModule = (function() {
             areaLink.href = '/area/' + sectorCode;
         }
 
+        // Wire compare button
+        const compareBtn = tooltip.querySelector('.compare-btn');
+        if (compareBtn && window.CompareModule) {
+            const areas = window.CompareModule.get();
+            const alreadyAdded = areas.includes(sectorCode);
+            compareBtn.dataset.code = sectorCode;
+            compareBtn.textContent = alreadyAdded ? '✓ Added' : '+ Compare';
+            if (alreadyAdded) compareBtn.classList.add('added');
+
+            compareBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const currentAreas = window.CompareModule.get();
+                if (currentAreas.includes(sectorCode)) {
+                    window.CompareModule.remove(sectorCode);
+                    compareBtn.textContent = '+ Compare';
+                    compareBtn.classList.remove('added');
+                } else {
+                    const added = window.CompareModule.add(sectorCode);
+                    if (added) {
+                        compareBtn.textContent = '✓ Added';
+                        compareBtn.classList.add('added');
+                    }
+                }
+            });
+        }
+
         // Add to DOM
         document.body.appendChild(tooltip);
         activeTooltip = tooltip;
@@ -260,6 +286,32 @@ const TooltipModule = (function() {
         const areaLink = tooltip.querySelector('.area-link');
         if (areaLink) {
             areaLink.href = '/area/' + sectorCode;
+        }
+
+        // Wire compare button
+        const compareBtn = tooltip.querySelector('.compare-btn');
+        if (compareBtn && window.CompareModule) {
+            const areas = window.CompareModule.get();
+            const alreadyAdded = areas.includes(sectorCode);
+            compareBtn.dataset.code = sectorCode;
+            compareBtn.textContent = alreadyAdded ? '✓ Added' : '+ Compare';
+            if (alreadyAdded) compareBtn.classList.add('added');
+
+            compareBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const currentAreas = window.CompareModule.get();
+                if (currentAreas.includes(sectorCode)) {
+                    window.CompareModule.remove(sectorCode);
+                    compareBtn.textContent = '+ Compare';
+                    compareBtn.classList.remove('added');
+                } else {
+                    const added = window.CompareModule.add(sectorCode);
+                    if (added) {
+                        compareBtn.textContent = '✓ Added';
+                        compareBtn.classList.add('added');
+                    }
+                }
+            });
         }
 
         // Add to DOM

@@ -366,6 +366,77 @@
     }
 
     /**
+     * Initialize the embed modal — shows iframe code for the current view
+     */
+    function initEmbedModal() {
+        const openBtn  = document.getElementById('embed-btn');
+        const modal    = document.getElementById('embed-modal');
+        if (!openBtn || !modal) return;
+
+        const closeBtn  = modal.querySelector('.modal-close');
+        const codeArea  = document.getElementById('embed-code');
+        const copyBtn   = document.getElementById('copy-embed-btn');
+
+        function generateCode() {
+            const tab = TabsModule.getActiveTab();
+            const embedParams = new URLSearchParams();
+
+            if (tab === 'change') {
+                // Change view isn't supported in the embed — use the end year instead
+                const state = FiltersModule.getChangeState();
+                embedParams.set('year', state.endYear);
+                embedParams.set('type', state.propertyType);
+            } else {
+                const state = FiltersModule.getState();
+                embedParams.set('year', state.year);
+                embedParams.set('type', state.propertyType);
+            }
+
+            const src = 'https://housepricedashboard.co.uk/embed?' + embedParams.toString();
+            return '<iframe\n  src="' + src + '"\n  width="800" height="500"\n  frameborder="0"\n  style="border:0;border-radius:4px"\n></iframe>';
+        }
+
+        function openModal() {
+            codeArea.value = generateCode();
+            modal.style.display = 'flex';
+            codeArea.select();
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+
+        // Close on backdrop click
+        modal.addEventListener('click', function (e) {
+            if (e.target === modal) closeModal();
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
+        });
+
+        copyBtn.addEventListener('click', async function () {
+            try {
+                await navigator.clipboard.writeText(codeArea.value);
+            } catch (err) {
+                codeArea.select();
+                document.execCommand('copy');
+            }
+            const original = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(function () {
+                copyBtn.textContent = original;
+                copyBtn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+
+    /**
      * Initialize share button — copies the current URL to clipboard
      */
     function initShareButton() {
@@ -489,6 +560,9 @@
 
             // Initialize share button
             initShareButton();
+
+            // Initialize embed modal
+            initEmbedModal();
 
             // Initialize the map
             const map = MapModule.init('map');

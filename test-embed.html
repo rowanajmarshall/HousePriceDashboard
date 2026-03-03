@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Embed Test</title>
+    <style>
+        body { font-family: sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        h1 { font-size: 18px; margin-bottom: 8px; }
+        p { color: #666; font-size: 14px; margin-bottom: 20px; }
+        iframe { display: block; border-radius: 4px; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body>
+    <h1>Embed test</h1>
+    <p>Requires <code>npx serve public</code> running on port 3000.</p>
+    <iframe
+        src="http://localhost:3000/embed.html?year=2025&type=A"
+        width="860"
+        height="500"
+        frameborder="0"
+    ></iframe>
+</body>
+</html>

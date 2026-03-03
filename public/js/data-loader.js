@@ -18,6 +18,43 @@ const DataLoader = (function() {
         inflationPath: 'data/inflation.json'
     };
 
+    // Cache API storage name — increment to bust persisted cache
+    const CACHE_NAME = 'house-price-v1';
+
+    /**
+     * Fetch a JSON resource, using the Cache API for persistence across page loads.
+     * Falls back to a plain fetch if the Cache API is unavailable or errors.
+     * @param {string} path - Relative URL to fetch
+     * @returns {Promise<any>} Parsed JSON
+     */
+    async function getCachedOrFetch(path) {
+        if ('caches' in window) {
+            try {
+                const storage = await caches.open(CACHE_NAME);
+                const cached = await storage.match(path);
+                if (cached) {
+                    return cached.json();
+                }
+            } catch (err) {
+                // Cache API unavailable or failed — fall through to network
+            }
+        }
+
+        const response = await fetch(path);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        if ('caches' in window) {
+            try {
+                const storage = await caches.open(CACHE_NAME);
+                storage.put(path, response.clone()); // fire-and-forget
+            } catch (err) {
+                // Cache write failed — that's OK, we still have the response
+            }
+        }
+
+        return response.json();
+    }
+
     /**
      * Load GeoJSON boundaries for all postcode sectors
      * @returns {Promise<Object>} GeoJSON FeatureCollection
@@ -28,11 +65,7 @@ const DataLoader = (function() {
         }
 
         try {
-            const response = await fetch(config.boundariesPath);
-            if (!response.ok) {
-                throw new Error(`Failed to load boundaries: ${response.status}`);
-            }
-            cache.boundaries = await response.json();
+            cache.boundaries = await getCachedOrFetch(config.boundariesPath);
             return cache.boundaries;
         } catch (error) {
             console.error('Error loading boundaries:', error);
@@ -50,11 +83,7 @@ const DataLoader = (function() {
         }
 
         try {
-            const response = await fetch(config.inflationPath);
-            if (!response.ok) {
-                throw new Error(`Failed to load inflation data: ${response.status}`);
-            }
-            cache.inflation = await response.json();
+            cache.inflation = await getCachedOrFetch(config.inflationPath);
             return cache.inflation;
         } catch (error) {
             console.error('Error loading inflation data:', error);
@@ -95,13 +124,8 @@ const DataLoader = (function() {
         }
 
         try {
-            const response = await fetch(`${config.pricesPath}/${year}.json`);
-            if (!response.ok) {
-                throw new Error(`Failed to load price data for ${year}: ${response.status}`);
-            }
-            const data = await response.json();
-            cache.prices[year] = data;
-            return data;
+            cache.prices[year] = await getCachedOrFetch(`${config.pricesPath}/${year}.json`);
+            return cache.prices[year];
         } catch (error) {
             console.error(`Error loading price data for ${year}:`, error);
             throw error;
@@ -357,11 +381,7 @@ const DataLoader = (function() {
         }
 
         try {
-            const response = await fetch('data/district-names.json');
-            if (!response.ok) {
-                throw new Error(`Failed to load district names: ${response.status}`);
-            }
-            cache.districtNames = await response.json();
+            cache.districtNames = await getCachedOrFetch('data/district-names.json');
             return cache.districtNames;
         } catch (error) {
             console.error('Error loading district names:', error);

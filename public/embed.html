@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK House Price Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin="">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        .embed-wrap {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        #map { flex: 1; min-height: 0; }
+
+        /* Controls bar */
+        .embed-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 12px;
+            height: 44px;
+            background: #2c3e50;
+            color: white;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .embed-sep {
+            width: 1px;
+            height: 22px;
+            background: rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+
+        /* Year */
+        .embed-year {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .embed-year input[type="range"] {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .embed-year input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+        }
+
+        .embed-year input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #3498db;
+            cursor: pointer;
+            border: none;
+        }
+
+        .embed-year-val {
+            font-weight: 700;
+            font-size: 13px;
+            min-width: 30px;
+            text-align: right;
+        }
+
+        /* Property type buttons */
+        .embed-types {
+            display: flex;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .embed-type-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 11px;
+            font-family: inherit;
+            padding: 2px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .embed-type-btn:hover { color: white; border-color: rgba(255, 255, 255, 0.55); }
+        .embed-type-btn.active { background: #3498db; border-color: #3498db; color: white; }
+
+        /* Legend */
+        .embed-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .embed-legend-bar {
+            width: 72px;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #0000ff, #8000ff, #ff0000);
+        }
+
+        .embed-legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            width: 72px;
+        }
+
+        /* Attribution */
+        .embed-attribution {
+            color: rgba(255, 255, 255, 0.45);
+            text-decoration: none;
+            font-size: 11px;
+            flex-shrink: 0;
+            white-space: nowrap;
+            transition: color 0.15s;
+        }
+
+        .embed-attribution:hover { color: rgba(255, 255, 255, 0.85); }
+
+        /* Loading */
+        .embed-loading {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.25s;
+        }
+
+        .embed-loading.hidden { opacity: 0; pointer-events: none; }
+
+        .embed-spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #3498db;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Hide legend on very small embeds */
+        @media (max-width: 460px) {
+            .embed-legend, .embed-sep:nth-last-child(2) { display: none; }
+        }
+
+        /* Tooltip */
+        .embed-tooltip {
+            position: fixed;
+            z-index: 1000;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.18);
+            min-width: 200px;
+            max-width: 255px;
+            animation: fadeIn 0.15s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .embed-tt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 6px 6px 0 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .embed-tt-title { font-weight: 600; font-size: 15px; color: #2c3e50; }
+
+        .embed-tt-close {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            color: #999;
+            line-height: 1;
+            padding: 0;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .embed-tt-close:hover { background: #e0e0e0; color: #333; }
+
+        .embed-tt-sub {
+            padding: 4px 12px;
+            font-size: 11px;
+            color: #999;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .embed-tt-body {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .embed-tt-row { display: flex; justify-content: space-between; align-items: center; }
+        .embed-tt-lbl { color: #888; font-size: 12px; }
+        .embed-tt-val { font-weight: 600; color: #333; font-size: 13px; }
+
+        .embed-tt-footer {
+            padding: 6px 12px;
+            border-top: 1px solid #e0e0e0;
+            text-align: right;
+        }
+
+        .embed-tt-footer a { color: #3498db; text-decoration: none; font-size: 12px; }
+        .embed-tt-footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="embed-wrap">
+        <div id="map"></div>
+
+        <div class="embed-controls">
+            <div class="embed-year">
+                <input type="range" id="year-slider" min="1995" max="2025" value="2025">
+                <span class="embed-year-val" id="year-value">2025</span>
+            </div>
+
+            <div class="embed-sep"></div>
+
+            <div class="embed-types">
+                <button class="embed-type-btn" data-type="A">All</button>
+                <button class="embed-type-btn" data-type="D">D</button>
+                <button class="embed-type-btn" data-type="S">S</button>
+                <button class="embed-type-btn" data-type="T">T</button>
+                <button class="embed-type-btn" data-type="F">F</button>
+            </div>
+
+            <div class="embed-sep"></div>
+
+            <div class="embed-legend">
+                <div class="embed-legend-bar"></div>
+                <div class="embed-legend-labels">
+                    <span id="legend-min">-</span>
+                    <span id="legend-max">-</span>
+                </div>
+            </div>
+
+            <div class="embed-sep"></div>
+
+            <a href="https://housepricedashboard.co.uk" target="_blank" rel="noopener"
+               class="embed-attribution">housepricedashboard.co.uk ↗</a>
+        </div>
+
+        <div class="embed-loading" id="embed-loading">
+            <div class="embed-spinner"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <script src="js/data-loader.js?v=19"></script>
+    <script src="js/map.js?v=19"></script>
+    <script src="js/heatmap.js?v=19"></script>
+
+    <script>
+    (function () {
+        'use strict';
+
+        const VALID_TYPES = ['A', 'D', 'S', 'T', 'F'];
+
+        const params = new URLSearchParams(window.location.search);
+        let year = Math.max(1995, Math.min(2025, parseInt(params.get('year')) || 2025));
+        let propertyType = VALID_TYPES.includes(params.get('type')) ? params.get('type') : 'A';
+
+        const slider    = document.getElementById('year-slider');
+        const yearDisp  = document.getElementById('year-value');
+        const loadingEl = document.getElementById('embed-loading');
+
+        function showLoading(on) {
+            loadingEl.classList.toggle('hidden', !on);
+        }
+
+        function setActiveType(type) {
+            document.querySelectorAll('.embed-type-btn').forEach(function (btn) {
+                btn.classList.toggle('active', btn.dataset.type === type);
+            });
+        }
+
+        async function updateMap(newYear, newType) {
+            year = newYear;
+            propertyType = newType;
+            closeTooltip();
+            showLoading(true);
+            try {
+                await HeatmapModule.update(year, propertyType);
+            } finally {
+                showLoading(false);
+            }
+            const url = new URL(window.location.href);
+            url.searchParams.set('year', year);
+            url.searchParams.set('type', propertyType);
+            window.history.replaceState(null, '', url.toString());
+        }
+
+        // Sync slider to initial year
+        slider.value = year;
+        yearDisp.textContent = year;
+        setActiveType(propertyType);
+
+        slider.addEventListener('input', function () {
+            yearDisp.textContent = this.value;
+        });
+
+        slider.addEventListener('change', function () {
+            updateMap(parseInt(this.value, 10), propertyType);
+        });
+
+        document.querySelectorAll('.embed-type-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setActiveType(this.dataset.type);
+                updateMap(year, this.dataset.type);
+            });
+        });
+
+        async function init() {
+            showLoading(true);
+            try {
+                const map = MapModule.init('map');
+                const [boundaries] = await Promise.all([
+                    DataLoader.loadBoundaries(),
+                    DataLoader.loadPriceData(year),
+                    DataLoader.loadDistrictNames()
+                ]);
+                await HeatmapModule.init(map, boundaries, year, propertyType);
+            } catch (err) {
+                console.error('Embed failed to initialise:', err);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+        window.addEventListener('resize', function () { MapModule.invalidateSize(); });
+
+        // --- Tooltip ---
+        const PROP_LABELS = { A: 'All Types', D: 'Detached', S: 'Semi-Detached', T: 'Terraced', F: 'Flats' };
+        let activeTooltip = null;
+
+        function closeTooltip() {
+            if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
+        }
+
+        function fmt(price) {
+            return price == null ? '-' : '£' + price.toLocaleString('en-GB');
+        }
+
+        function positionTooltip(el, latlng) {
+            const map = MapModule.getMap();
+            if (!map) return;
+            const pt = map.latLngToContainerPoint(latlng);
+            const rect = document.getElementById('map').getBoundingClientRect();
+            const ox = 15, oy = 15;
+            let left = rect.left + pt.x + ox;
+            let top  = rect.top  + pt.y + oy;
+            requestAnimationFrame(function () {
+                const w = el.offsetWidth  || 220;
+                const h = el.offsetHeight || 150;
+                if (left + w > window.innerWidth  - 10) left = rect.left + pt.x - w - ox;
+                if (top  + h > window.innerHeight - 10) top  = rect.top  + pt.y - h - oy;
+                el.style.left = Math.max(10, left) + 'px';
+                el.style.top  = Math.max(10, top)  + 'px';
+            });
+        }
+
+        document.addEventListener('sectorClick', function (e) {
+            const { feature, latlng } = e.detail;
+            const sectorId = feature.properties.id;
+            closeTooltip();
+
+            const stats = DataLoader.getPriceStats(sectorId, year, propertyType);
+            const name  = DataLoader.getDistrictName(sectorId);
+
+            const titleText = name ? name + ' \u2013 ' + sectorId : sectorId;
+            const subText   = (PROP_LABELS[propertyType] || 'All Types') + ' \u00b7 ' + year;
+
+            let bodyHTML;
+            if (stats) {
+                bodyHTML =
+                    '<div class="embed-tt-row"><span class="embed-tt-lbl">Average:</span><span class="embed-tt-val">' + fmt(stats.avg)    + '</span></div>' +
+                    '<div class="embed-tt-row"><span class="embed-tt-lbl">Median:</span> <span class="embed-tt-val">' + fmt(stats.median) + '</span></div>' +
+                    '<div class="embed-tt-row"><span class="embed-tt-lbl">Sales:</span>  <span class="embed-tt-val">' + stats.count.toLocaleString('en-GB') + '</span></div>';
+            } else {
+                bodyHTML = '<div style="color:#999;font-style:italic;font-size:12px">No data for this selection.</div>';
+            }
+
+            const tt = document.createElement('div');
+            tt.className = 'embed-tooltip';
+            tt.style.cssText = 'left:0;top:0';
+            tt.innerHTML =
+                '<div class="embed-tt-header">' +
+                    '<span class="embed-tt-title">' + titleText + '</span>' +
+                    '<button class="embed-tt-close" aria-label="Close">\u00d7</button>' +
+                '</div>' +
+                '<div class="embed-tt-sub">' + subText + '</div>' +
+                '<div class="embed-tt-body">' + bodyHTML + '</div>' +
+                '<div class="embed-tt-footer"><a href="https://housepricedashboard.co.uk/area/' + sectorId + '" target="_blank" rel="noopener">View full history \u2192</a></div>';
+
+            document.body.appendChild(tt);
+            activeTooltip = tt;
+            tt.querySelector('.embed-tt-close').addEventListener('click', closeTooltip);
+            positionTooltip(tt, latlng);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (activeTooltip && !activeTooltip.contains(e.target) && !e.target.closest('.leaflet-interactive')) {
+                closeTooltip();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeTooltip();
+        });
+    })();
+    </script>
+</body>
+</html>

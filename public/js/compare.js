@@ -109,6 +109,13 @@
         renderStats();
         renderCharts();
         setupControls();
+        trackAreas(areas);
+    }
+
+    function trackAreas(codes) {
+        if (typeof sa_event !== 'function') return;
+        var name = 'compare_area_' + codes.slice().sort().join('_').toLowerCase();
+        sa_event(name);
     }
 
     // ── Chips row ───────────────────────────────────────────────────────────

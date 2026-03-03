@@ -939,7 +939,8 @@
                     // update tooltip compare button state if active
                     const activeCompareBtn = document.querySelector('#active-tooltip .compare-btn');
                     if (activeCompareBtn && activeCompareBtn.dataset.code === code) {
-                        activeCompareBtn.textContent = '+ Compare';
+                        const lbl = activeCompareBtn.querySelector('.compare-btn-label');
+                        if (lbl) lbl.textContent = 'Compare';
                         activeCompareBtn.classList.remove('added');
                     }
                 });
@@ -981,7 +982,8 @@
                 CompareModule.clear();
                 // Reset all compare buttons in active tooltip
                 document.querySelectorAll('#active-tooltip .compare-btn').forEach(function(btn) {
-                    btn.textContent = '+ Compare';
+                    const lbl = btn.querySelector('.compare-btn-label');
+                    if (lbl) lbl.textContent = 'Compare';
                     btn.classList.remove('added');
                 });
             });

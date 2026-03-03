@@ -867,7 +867,7 @@ html, body {
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-lg);
     min-width: 220px;
-    max-width: 280px;
+    max-width: 320px;
     animation: fadeIn 0.15s ease;
 }
 
@@ -961,6 +961,7 @@ html, body {
     padding: var(--spacing-sm) var(--spacing-md);
     border-top: 1px solid var(--color-border);
     display: flex;
+    flex-wrap: wrap;
     gap: var(--spacing-sm);
 }
 
@@ -1284,36 +1285,30 @@ html, body {
     letter-spacing: 0.5px;
 }
 
-/* ── Compare Button (tooltip) ──────────────────────────────────────────── */
+/* ── Compare Button (tooltip) — full-width second row + added state */
 
 .compare-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    background: transparent;
-    color: var(--color-text-light);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-size: var(--font-size-sm);
-    font-family: var(--font-family);
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-}
-
-.compare-btn:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
+    flex-basis: 100%;
 }
 
 .compare-btn.added {
+    background: #27ae60;
+    color: white;
     border-color: #27ae60;
-    color: #27ae60;
-    background: rgba(39, 174, 96, 0.08);
+}
+
+.compare-btn.added:hover {
+    background: #219a52;
+    border-color: #219a52;
+    color: white;
 }
 
 /* ── Comparison Tray ───────────────────────────────────────────────────── */
+
+/* Push Leaflet's bottom controls (attribution, scale) above the tray */
+body:has(.compare-tray:not([hidden])) .leaflet-bottom {
+    bottom: 44px;
+}
 
 .compare-tray {
     position: fixed;

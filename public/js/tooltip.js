@@ -147,20 +147,23 @@ const TooltipModule = (function() {
             const areas = window.CompareModule.get();
             const alreadyAdded = areas.includes(sectorCode);
             compareBtn.dataset.code = sectorCode;
-            compareBtn.textContent = alreadyAdded ? '✓ Added' : '+ Compare';
+            const compareLbl = compareBtn.querySelector('.compare-btn-label');
+            if (compareLbl) compareLbl.textContent = alreadyAdded ? 'Added' : 'Compare';
             if (alreadyAdded) compareBtn.classList.add('added');
 
             compareBtn.addEventListener('click', function(e) {
+                e.preventDefault();
                 e.stopPropagation();
                 const currentAreas = window.CompareModule.get();
+                const lbl = compareBtn.querySelector('.compare-btn-label');
                 if (currentAreas.includes(sectorCode)) {
                     window.CompareModule.remove(sectorCode);
-                    compareBtn.textContent = '+ Compare';
+                    if (lbl) lbl.textContent = 'Compare';
                     compareBtn.classList.remove('added');
                 } else {
                     const added = window.CompareModule.add(sectorCode);
                     if (added) {
-                        compareBtn.textContent = '✓ Added';
+                        if (lbl) lbl.textContent = 'Added';
                         compareBtn.classList.add('added');
                     }
                 }
@@ -294,20 +297,23 @@ const TooltipModule = (function() {
             const areas = window.CompareModule.get();
             const alreadyAdded = areas.includes(sectorCode);
             compareBtn.dataset.code = sectorCode;
-            compareBtn.textContent = alreadyAdded ? '✓ Added' : '+ Compare';
+            const compareLbl = compareBtn.querySelector('.compare-btn-label');
+            if (compareLbl) compareLbl.textContent = alreadyAdded ? 'Added' : 'Compare';
             if (alreadyAdded) compareBtn.classList.add('added');
 
             compareBtn.addEventListener('click', function(e) {
+                e.preventDefault();
                 e.stopPropagation();
                 const currentAreas = window.CompareModule.get();
+                const lbl = compareBtn.querySelector('.compare-btn-label');
                 if (currentAreas.includes(sectorCode)) {
                     window.CompareModule.remove(sectorCode);
-                    compareBtn.textContent = '+ Compare';
+                    if (lbl) lbl.textContent = 'Compare';
                     compareBtn.classList.remove('added');
                 } else {
                     const added = window.CompareModule.add(sectorCode);
                     if (added) {
-                        compareBtn.textContent = '✓ Added';
+                        if (lbl) lbl.textContent = 'Added';
                         compareBtn.classList.add('added');
                     }
                 }

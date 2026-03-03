@@ -366,6 +366,40 @@
     }
 
     /**
+     * Initialize share button — copies the current URL to clipboard
+     */
+    function initShareButton() {
+        const btn = document.getElementById('share-btn');
+        if (!btn) return;
+
+        btn.addEventListener('click', async function() {
+            const url = window.location.href;
+
+            try {
+                await navigator.clipboard.writeText(url);
+            } catch (err) {
+                // Fallback for browsers without clipboard API
+                const textarea = document.createElement('textarea');
+                textarea.value = url;
+                textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!';
+            btn.classList.add('copied');
+
+            setTimeout(function() {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+
+    /**
      * Initialize mobile controls collapse functionality
      */
     function initMobileCollapse() {
@@ -452,6 +486,9 @@
 
             // Initialize mobile collapse (before async operations)
             initMobileCollapse();
+
+            // Initialize share button
+            initShareButton();
 
             // Initialize the map
             const map = MapModule.init('map');

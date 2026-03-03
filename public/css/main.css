@@ -549,6 +549,36 @@ html, body {
     text-decoration: none;
 }
 
+/* Share Button */
+.share-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: rgba(255, 255, 255, 0.8);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.share-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.share-btn.copied {
+    color: white;
+    background: rgba(39, 174, 96, 0.3);
+    border-color: rgba(39, 174, 96, 0.7);
+}
+
 /* Contact Page */
 .contact-main {
     flex: 1;

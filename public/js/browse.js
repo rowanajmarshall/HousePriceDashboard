@@ -28,7 +28,7 @@
         showLoading(true);
         try {
             const [names, yearData] = await Promise.all([
-                fetch('data/district-names.json').then(r => {
+                fetch('/api/data/district-names').then(r => {
                     if (!r.ok) throw new Error('Failed to load district names');
                     return r.json();
                 }),

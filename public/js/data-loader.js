@@ -14,12 +14,12 @@ const DataLoader = (function() {
     // Configuration
     const config = {
         boundariesPath: 'data/boundaries.geojson',
-        pricesPath: 'data/prices', // Will append /{year}.json
-        inflationPath: 'data/inflation.json'
+        pricesPath: '/api/data/prices',
+        inflationPath: '/api/data/inflation'
     };
 
     // Cache API storage name — increment to bust persisted cache
-    const CACHE_NAME = 'house-price-v1';
+    const CACHE_NAME = 'house-price-v2';
 
     /**
      * Fetch a JSON resource, using the Cache API for persistence across page loads.
@@ -124,7 +124,7 @@ const DataLoader = (function() {
         }
 
         try {
-            cache.prices[year] = await getCachedOrFetch(`${config.pricesPath}/${year}.json`);
+            cache.prices[year] = await getCachedOrFetch(`${config.pricesPath}/${year}`);
             return cache.prices[year];
         } catch (error) {
             console.error(`Error loading price data for ${year}:`, error);
@@ -381,7 +381,7 @@ const DataLoader = (function() {
         }
 
         try {
-            cache.districtNames = await getCachedOrFetch('data/district-names.json');
+            cache.districtNames = await getCachedOrFetch('/api/data/district-names');
             return cache.districtNames;
         } catch (error) {
             console.error('Error loading district names:', error);

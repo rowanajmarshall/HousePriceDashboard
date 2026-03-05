@@ -1,0 +1,26 @@
+[project]
+name = "house-price-dashboard"
+version = "0.1.0"
+description = "UK House Price Dashboard — FastAPI server + data pipeline"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "duckdb>=1.1",
+    "anthropic>=0.40",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+pipeline = [
+    "pandas>=2.0",
+    "requests>=2.28",
+    "tqdm>=4.65",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["server"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

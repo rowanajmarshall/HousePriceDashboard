@@ -196,26 +196,21 @@
 
     async function loadData() {
         try {
-            const promises = [
-                ...YEARS.map(y => DataLoader.loadPriceData(y).catch(() => null)),
-                DataLoader.loadInflation(),
-                fetch('data/district-names.json').then(r => r.json()).catch(() => ({}))
-            ];
-            const results = await Promise.all(promises);
+            const [districtResult, inflation] = await Promise.all([
+                fetch(`/api/data/district/${sectorCode}`).then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.json();
+                }),
+                DataLoader.loadInflation()
+            ]);
 
-            inflationData = results[YEARS.length];
-            const districtNamesMap = results[YEARS.length + 1] || {};
-            districtName = districtNamesMap[sectorCode] || null;
+            inflationData = inflation;
+            districtName = districtResult.name || null;
             headingEl.textContent = districtName ? districtName + ' - ' + sectorCode : sectorCode;
 
             allYearData = {};
-            YEARS.forEach((year, i) => {
-                const yearResult = results[i];
-                if (yearResult && yearResult.data) {
-                    allYearData[year] = yearResult.data[sectorCode] || null;
-                } else {
-                    allYearData[year] = null;
-                }
+            YEARS.forEach(year => {
+                allYearData[year] = districtResult.data[String(year)] || null;
             });
 
             const hasAnyData = Object.values(allYearData).some(d => d !== null);

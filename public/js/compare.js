@@ -53,11 +53,16 @@
 
     // ── Data loading ────────────────────────────────────────────────────────
 
+    async function fetchDistrictData(code) {
+        const r = await fetch(`/api/data/district/${code}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+    }
+
     async function loadData() {
         try {
-            const yearPromises = YEARS.map(y => DataLoader.loadPriceData(y).catch(() => null));
-            const [, namesResult, inflResult] = await Promise.all([
-                Promise.all(yearPromises),
+            const [areaResults, namesResult, inflResult] = await Promise.all([
+                Promise.all(areas.map(code => fetchDistrictData(code).catch(() => null))),
                 DataLoader.loadDistrictNames().catch(() => ({})),
                 DataLoader.loadInflation()
             ]);
@@ -65,31 +70,21 @@
             districtNames = namesResult || {};
             inflationData = inflResult;
 
-            // Build per-area year data from the now-cached price files
-            YEARS.forEach(year => {
-                areas.forEach(code => {
-                    if (!allYearData[code]) allYearData[code] = {};
-                    allYearData[code][year] = getCachedSectorData(code, year);
-                });
+            areaResults.forEach((result, i) => {
+                const code = areas[i];
+                allYearData[code] = {};
+                if (result && result.data) {
+                    YEARS.forEach(year => {
+                        allYearData[code][year] = result.data[String(year)] || null;
+                    });
+                    if (result.name) districtNames[code] = districtNames[code] || result.name;
+                }
             });
 
             showContent();
         } catch (err) {
             console.error('Failed to load compare data:', err);
         }
-    }
-
-    function getCachedSectorData(code, year) {
-        // DataLoader caches internally — fetch the raw sector data via getPriceStats
-        // We need the raw object so we can pick any type; use private path via DataLoader APIs
-        const types = ['A', 'D', 'S', 'T', 'F'];
-        const result = {};
-        let hasAny = false;
-        types.forEach(t => {
-            const s = DataLoader.getPriceStats(code, year, t);
-            if (s) { result[t] = s; hasAny = true; }
-        });
-        return hasAny ? result : null;
     }
 
     // ── Show states ─────────────────────────────────────────────────────────
@@ -260,13 +255,22 @@
             btn.style.display = '';
         }
 
-        function selectCode(code) {
+        async function selectCode(code) {
             areas.push(code);
             allYearData[code] = {};
-            YEARS.forEach(function(year) {
-                allYearData[code][year] = getCachedSectorData(code, year);
-            });
             updateUrl();
+            renderChips();
+            try {
+                const result = await fetchDistrictData(code);
+                if (result && result.data) {
+                    YEARS.forEach(function(year) {
+                        allYearData[code][year] = result.data[String(year)] || null;
+                    });
+                    if (result.name) districtNames[code] = districtNames[code] || result.name;
+                }
+            } catch (e) {
+                console.error('Failed to load data for ' + code, e);
+            }
             renderChips();
             renderStats();
             updateCharts();

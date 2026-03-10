@@ -18,12 +18,23 @@ router = APIRouter()
 
 ROOT = Path(__file__).parent.parent
 _AREA_PAGE = ROOT / "public" / "area-page.html"
-_COMPARE_PAGE = (ROOT / "public" / "compare.html").read_text()
+def _static(name: str) -> HTMLResponse:
+    return HTMLResponse(content=(ROOT / "public" / f"{name}.html").read_text())
 
 
 @router.get("/compare", response_class=HTMLResponse)
 async def compare_page():
-    return HTMLResponse(content=_COMPARE_PAGE)
+    return _static("compare")
+
+
+@router.get("/embed", response_class=HTMLResponse)
+async def embed_page():
+    return _static("embed")
+
+
+@router.get("/browse", response_class=HTMLResponse)
+async def browse_page():
+    return _static("browse")
 
 # Postcode area prefix → place name.
 # Two-letter prefixes are checked before single-letter ones.

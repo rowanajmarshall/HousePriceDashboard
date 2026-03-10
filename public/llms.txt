@@ -1,0 +1,20 @@
+# UK House Price Heatmap
+
+> Interactive heatmap of UK residential property prices by postcode district, sourced from the Land Registry Price Paid dataset (1995–2025).
+
+Data covers approximately 30 million transactions across ~3,000 postcode districts in England and Wales. Prices can be viewed in nominal or inflation-adjusted (real 2025 £) terms using ONS CPI series D7BT.
+
+## Pages
+
+- [Map](https://housepricedashboard.co.uk/): Interactive heatmap. Colour-coded by average or median sale price, or by price change between two years. Filter by property type (detached, semi-detached, terraced, flat) and year.
+- [Compare](https://housepricedashboard.co.uk/compare.html): Side-by-side comparison of up to four postcode districts. Shows average price, median price, and sales volume from 1995 to 2025.
+- [Browse](https://housepricedashboard.co.uk/browse.html): Sortable league table of all postcode districts by average price, median price, or sales volume for a given year.
+- [Area pages](https://housepricedashboard.co.uk/area/SW1A): Per-district detail page with price history charts and statistics. URL format: `/area/{district}` (e.g. `/area/SW1A`, `/area/E1`).
+- [Attributions](https://housepricedashboard.co.uk/attribution.html): Data source credits.
+
+## Data
+
+- **Transactions**: Land Registry Price Paid Data. Updated annually. Covers England and Wales only.
+- **Inflation**: ONS CPI series D7BT, base year 2015 = 100.
+- **Property types**: D = Detached, S = Semi-detached, T = Terraced, F = Flat/maisonette.
+- **Geography**: Postcode district level (e.g. SW1A, E1, LS1). Not available at full postcode or local authority level.

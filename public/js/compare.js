@@ -53,38 +53,48 @@
 
     // ── Data loading ────────────────────────────────────────────────────────
 
-    async function fetchDistrictData(code) {
-        const r = await fetch(`/api/data/district/${code}`);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
+    function storeDistrictData(code, result) {
+        allYearData[code] = {};
+        if (result && result.data) {
+            YEARS.forEach(year => {
+                allYearData[code][year] = result.data[String(year)] || null;
+            });
+            if (result.name) districtNames[code] = result.name || districtNames[code];
+        }
     }
 
     async function loadData() {
         try {
             const [areaResults, namesResult, inflResult] = await Promise.all([
-                Promise.all(areas.map(code => fetchDistrictData(code).catch(() => null))),
+                Promise.all(areas.map(code => DataLoader.loadDistrictData(code).catch(() => null))),
                 DataLoader.loadDistrictNames().catch(() => ({})),
                 DataLoader.loadInflation()
             ]);
 
             districtNames = namesResult || {};
             inflationData = inflResult;
-
-            areaResults.forEach((result, i) => {
-                const code = areas[i];
-                allYearData[code] = {};
-                if (result && result.data) {
-                    YEARS.forEach(year => {
-                        allYearData[code][year] = result.data[String(year)] || null;
-                    });
-                    if (result.name) districtNames[code] = districtNames[code] || result.name;
-                }
-            });
+            areaResults.forEach((result, i) => storeDistrictData(areas[i], result));
 
             showContent();
         } catch (err) {
             console.error('Failed to load compare data:', err);
         }
+    }
+
+    async function addArea(code) {
+        areas.push(code);
+        storeDistrictData(code, null); // initialise empty so charts don't error
+        updateUrl();
+        renderChips(); // optimistic: show chip immediately
+        try {
+            const result = await DataLoader.loadDistrictData(code);
+            storeDistrictData(code, result);
+        } catch (e) {
+            console.error('Failed to load data for ' + code, e);
+        }
+        renderChips(); // re-render with name populated
+        renderStats();
+        updateCharts();
     }
 
     // ── Show states ─────────────────────────────────────────────────────────
@@ -255,25 +265,9 @@
             btn.style.display = '';
         }
 
-        async function selectCode(code) {
-            areas.push(code);
-            allYearData[code] = {};
-            updateUrl();
-            renderChips();
-            try {
-                const result = await fetchDistrictData(code);
-                if (result && result.data) {
-                    YEARS.forEach(function(year) {
-                        allYearData[code][year] = result.data[String(year)] || null;
-                    });
-                    if (result.name) districtNames[code] = districtNames[code] || result.name;
-                }
-            } catch (e) {
-                console.error('Failed to load data for ' + code, e);
-            }
-            renderChips();
-            renderStats();
-            updateCharts();
+        function selectCode(code) {
+            cancelAdd();
+            addArea(code);
         }
 
         input.focus();

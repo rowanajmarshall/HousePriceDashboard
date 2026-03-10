@@ -18,8 +18,12 @@ router = APIRouter()
 
 ROOT = Path(__file__).parent.parent
 _AREA_PAGE = ROOT / "public" / "area-page.html"
+
+
+@lru_cache(maxsize=None)
 def _static(name: str) -> HTMLResponse:
-    return HTMLResponse(content=(ROOT / "public" / f"{name}.html").read_text())
+    content = (ROOT / "public" / f"{name}.html").read_text()
+    return HTMLResponse(content=content)
 
 
 @router.get("/compare", response_class=HTMLResponse)

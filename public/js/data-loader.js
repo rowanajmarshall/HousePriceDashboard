@@ -8,7 +8,8 @@ const DataLoader = (function() {
         boundaries: null,
         prices: {}, // Keyed by year
         inflation: null, // CPI data
-        districtNames: null // { "AL1": "St Albans", ... }
+        districtNames: null, // { "AL1": "St Albans", ... }
+        districts: {} // Keyed by district code
     };
 
     // Configuration
@@ -390,6 +391,25 @@ const DataLoader = (function() {
     }
 
     /**
+     * Load all-years data for a single postcode district
+     * @param {string} code - District code (e.g. "SW1A")
+     * @returns {Promise<Object>} District data with name and per-year stats
+     */
+    async function loadDistrictData(code) {
+        if (cache.districts[code]) {
+            return cache.districts[code];
+        }
+
+        try {
+            cache.districts[code] = await getCachedOrFetch(`/api/data/district/${code}`);
+            return cache.districts[code];
+        } catch (error) {
+            console.error(`Error loading district data for ${code}:`, error);
+            throw error;
+        }
+    }
+
+    /**
      * Get the human-readable name for a postcode district
      * @param {string} code - District code (e.g. "AL1")
      * @returns {string|null} Name or null if not loaded / not found
@@ -444,6 +464,7 @@ const DataLoader = (function() {
         loadPriceData,
         loadInflation,
         loadDistrictNames,
+        loadDistrictData,
         getDistrictName,
         preloadYears,
         getPriceStats,

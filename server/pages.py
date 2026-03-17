@@ -9,10 +9,13 @@ import re
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
 from .database import get_connection
+from .data import _load_district
+
+_POSTCODE_RE = re.compile(r"^[A-Z]{1,2}\d{1,2}[A-Z]?$")
 
 router = APIRouter()
 
@@ -105,7 +108,45 @@ def _district_name(code: str) -> str | None:
     return row[0] if row else None
 
 
-def _inject_meta(html: str, code: str) -> str:
+def _ssr_summary(code: str, place: str | None) -> str | None:
+    """Query the DB for district stats and return a pre-rendered summary sentence.
+
+    Returns None if the district has no data (signals a 404).
+    """
+    try:
+        district_data = _load_district(code)
+    except Exception:
+        return None
+
+    data = district_data.get("data", {})
+    if not data:
+        return None
+
+    years = sorted(int(y) for y in data.keys())
+    latest_year = years[-1]
+    latest_all = data[str(latest_year)].get("A", {})
+    total_transactions = sum(
+        data[str(y)].get("A", {}).get("count", 0) for y in years
+    )
+
+    place_str = f"{place} ({code})" if place else code
+    avg_price = latest_all.get("avg")
+
+    parts = [f"{place_str} house prices cover {years[0]}–{latest_year}"]
+    if avg_price:
+        parts.append(f"average sale price of £{avg_price:,} in {latest_year}")
+    if total_transactions:
+        parts.append(f"{total_transactions:,} recorded transactions")
+
+    return ", ".join(parts) + "."
+
+
+def _inject_meta(html: str, code: str) -> tuple[str, bool]:
+    """Inject SEO meta tags and SSR content.
+
+    Returns (html, has_data). has_data is False when the district has no
+    transactions — the caller should 404 in that case.
+    """
     specific = _district_name(code)
     area = _area_name(code)
     place = specific or area
@@ -167,11 +208,32 @@ def _inject_meta(html: str, code: str) -> str:
         1,
     )
 
-    return html
+    # SSR: pre-populate visible content so crawlers see real data without JS.
+    summary = _ssr_summary(code, place)
+    if summary:
+        html = html.replace(
+            '<p class="area-summary" id="area-summary"></p>',
+            f'<p class="area-summary" id="area-summary">{summary}</p>',
+        )
+        # Show content immediately; JS will update it once data loads.
+        html = html.replace(
+            '<div id="area-content" style="display: none;">',
+            '<div id="area-content">',
+        )
+        html = html.replace(
+            '<div class="area-loading" id="area-loading">',
+            '<div class="area-loading" id="area-loading" style="display: none;">',
+        )
+
+    return html, summary is not None
 
 
 @router.get("/area/{code}", response_class=HTMLResponse)
 async def area_page(code: str):
     code = code.upper()
-    html = _inject_meta(_html_template(), code)
+    if not _POSTCODE_RE.match(code):
+        raise HTTPException(status_code=404)
+    html, has_data = _inject_meta(_html_template(), code)
+    if not has_data:
+        raise HTTPException(status_code=404)
     return HTMLResponse(content=html)

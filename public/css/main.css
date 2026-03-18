@@ -328,10 +328,11 @@ html, body {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
-    padding: var(--spacing-sm) var(--spacing-md);
+    padding: 13px var(--spacing-md);
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: background-color 0.15s ease;
+    min-height: 44px;
 }
 
 .radio-option:hover {
@@ -375,6 +376,8 @@ html, body {
     outline: none;
     cursor: pointer;
     -webkit-appearance: none;
+    padding: 12px 0;
+    box-sizing: content-box;
 }
 
 .year-selector input[type="range"]::-webkit-slider-thumb {
@@ -449,6 +452,8 @@ html, body {
     -webkit-appearance: none;
     appearance: none;
     pointer-events: none;
+    padding: 12px 0;
+    box-sizing: content-box;
 }
 
 .dual-range-input::-webkit-slider-thumb {

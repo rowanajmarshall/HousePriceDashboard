@@ -268,7 +268,7 @@ html, body {
     font-size: var(--font-size-sm);
     color: var(--color-text-light);
     border-bottom: 2px solid transparent;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, color 0.15s ease, border-bottom-color 0.15s ease;
 }
 
 .tab-btn:first-child {
@@ -559,7 +559,7 @@ html, body {
     border-radius: var(--border-radius);
     font-weight: 500;
     font-size: var(--font-size-sm);
-    transition: all 0.2s;
+    transition: color 0.2s, background-color 0.2s;
 }
 
 .nav-link:hover,
@@ -707,7 +707,7 @@ html, body {
     font-weight: 500;
     font-size: var(--font-size-sm);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
     white-space: nowrap;
 }
 
@@ -1546,7 +1546,7 @@ body:has(.compare-tray:not([hidden])) .leaflet-bottom {
     font-size: var(--font-size-sm);
     font-family: var(--font-family);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: border-color 0.15s, color 0.15s;
 }
 
 .compare-add-area-btn:hover {
@@ -1632,7 +1632,7 @@ body:has(.compare-tray:not([hidden])) .leaflet-bottom {
     font-size: var(--font-size-sm);
     font-weight: 500;
     color: var(--color-text-light);
-    transition: all 0.15s;
+    transition: background-color 0.15s, color 0.15s;
     font-family: var(--font-family);
 }
 

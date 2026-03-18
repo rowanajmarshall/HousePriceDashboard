@@ -1312,13 +1312,6 @@ html, body {
     text-decoration: underline;
 }
 
-/* ── Compare Button (tooltip) ──────────────────────────────────────────── */
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--color-text-light);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
 
 /* ── Compare Button (tooltip) — full-width second row + added state */
 

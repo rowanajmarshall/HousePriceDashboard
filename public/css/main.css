@@ -378,8 +378,6 @@ html, body {
     outline: none;
     cursor: pointer;
     -webkit-appearance: none;
-    padding: 12px 0;
-    box-sizing: content-box;
 }
 
 .year-selector input[type="range"]::-webkit-slider-thumb {
@@ -454,8 +452,6 @@ html, body {
     -webkit-appearance: none;
     appearance: none;
     pointer-events: none;
-    padding: 12px 0;
-    box-sizing: content-box;
 }
 
 .dual-range-input::-webkit-slider-thumb {

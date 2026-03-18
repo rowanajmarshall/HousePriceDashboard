@@ -624,13 +624,14 @@ html, body {
     color: var(--color-text-light);
     line-height: 1;
     padding: 0;
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     transition: background 0.15s;
+    flex-shrink: 0;
 }
 
 .modal-close:hover {
@@ -930,13 +931,14 @@ html, body {
     color: var(--color-text-light);
     line-height: 1;
     padding: 0;
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     transition: background-color 0.15s ease;
+    flex-shrink: 0;
 }
 
 .tooltip-close:hover {

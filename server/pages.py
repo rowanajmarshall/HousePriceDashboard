@@ -207,6 +207,11 @@ def _inject_meta(html: str, code: str) -> tuple[str, bool]:
         f'<base href="/">\n    <link rel="canonical" href="{canonical}">',
         1,
     )
+    html = re.sub(
+        r'(<meta\s+name="robots"\s+content=")[^"]*(")',
+        r'\g<1>index, follow\2',
+        html,
+    )
 
     # SSR: pre-populate visible content so crawlers see real data without JS.
     summary = _ssr_summary(code, place)

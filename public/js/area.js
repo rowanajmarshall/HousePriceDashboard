@@ -91,6 +91,8 @@
         setMetaTag('meta[name="twitter:title"]', 'content', title);
         setMetaTag('meta[name="twitter:description"]', 'content', description);
 
+        setMetaTag('meta[name="robots"]', 'content', 'index, follow');
+
         setJsonLd({
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',

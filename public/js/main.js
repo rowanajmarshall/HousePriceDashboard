@@ -256,6 +256,7 @@
                 searchBox.classList.remove('error');
                 searchInput.blur();
                 updateUrlWithCity(term.toLowerCase());
+                if (window.posthog) posthog.capture('postcode_searched', { search_type: 'city', query_length: term.length, success: true });
                 return;
             }
 
@@ -266,6 +267,7 @@
                 searchBox.classList.remove('error');
                 searchInput.blur();
                 updateUrlWithCity(cityByName[0]);
+                if (window.posthog) posthog.capture('postcode_searched', { search_type: 'city', query_length: term.length, success: true });
                 return;
             }
 
@@ -275,9 +277,11 @@
                 searchBox.classList.remove('error');
                 searchInput.blur();
                 updateUrlWithPostcode(term);
+                if (window.posthog) posthog.capture('postcode_searched', { search_type: 'postcode', query_length: term.length, success: true });
             } else {
                 searchBox.classList.add('error');
                 setTimeout(() => searchBox.classList.remove('error'), 1500);
+                if (window.posthog) posthog.capture('postcode_searched', { search_type: 'unknown', query_length: term.length, success: false });
             }
         }
 
@@ -458,6 +462,8 @@
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
             }
+
+            if (window.posthog) posthog.capture('share_url_copied');
 
             const originalHTML = btn.innerHTML;
             btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!';
@@ -703,6 +709,7 @@
             // Preload adjacent years if year changed
             if (event.type === 'year') {
                 preloadAdjacentYears(event.state.year);
+                if (window.posthog) posthog.capture('year_filter_changed', { year: event.state.year, property_type: event.state.propertyType });
             }
 
         } catch (error) {
@@ -783,6 +790,8 @@
 
             FiltersModule.enable();
             showLoading(false);
+
+            if (window.posthog) posthog.capture('tab_switched', { tab: event.tab });
 
             // Update mobile summary
             updateControlsSummary();

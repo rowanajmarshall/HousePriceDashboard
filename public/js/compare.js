@@ -86,6 +86,7 @@
         storeDistrictData(code, null); // initialise empty so charts don't error
         updateUrl();
         renderChips(); // optimistic: show chip immediately
+        if (window.posthog) posthog.capture('area_added_to_comparison', { postcode_district: code, total_areas: areas.length });
         try {
             const result = await DataLoader.loadDistrictData(code);
             storeDistrictData(code, result);
@@ -121,6 +122,7 @@
         if (typeof sa_event !== 'function') return;
         var name = 'compare_area_' + codes.slice().sort().join('_').toLowerCase();
         sa_event(name);
+        if (window.posthog) posthog.capture('comparison_viewed', { area_count: codes.length });
     }
 
     // ── Chips row ───────────────────────────────────────────────────────────

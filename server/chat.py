@@ -8,11 +8,12 @@ from contextlib import contextmanager
 from typing import AsyncIterator
 
 import anthropic
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from . import config
+from .analytics import posthog_client
 from .database import execute_query
 
 router = APIRouter()
@@ -83,7 +84,7 @@ def _timeout(seconds: int):
         signal.signal(signal.SIGALRM, old)
 
 
-def _run_tool(tool_name: str, tool_input: dict) -> str:
+def _run_tool(tool_name: str, tool_input: dict, distinct_id: str = "anonymous") -> str:
     if tool_name != "execute_sql":
         return json.dumps({"error": f"Unknown tool: {tool_name}"})
 
@@ -96,14 +97,30 @@ def _run_tool(tool_name: str, tool_input: dict) -> str:
     try:
         with _timeout(config.QUERY_TIMEOUT):
             rows = execute_query(sql)
+        if posthog_client:
+            posthog_client.capture(distinct_id, "sql_query_executed", {
+                "success": True,
+                "row_count": len(rows),
+            })
         return json.dumps(rows, default=str)
     except TimeoutError as e:
+        if posthog_client:
+            posthog_client.capture(distinct_id, "sql_query_executed", {
+                "success": False,
+                "error": "timeout",
+            })
         return json.dumps({"error": str(e)})
     except Exception as e:
+        if posthog_client:
+            posthog_client.capture_exception(e)
+            posthog_client.capture(distinct_id, "sql_query_executed", {
+                "success": False,
+                "error": "exception",
+            })
         return json.dumps({"error": str(e)})
 
 
-async def _stream_chat(messages: list[dict]) -> AsyncIterator[str]:
+async def _stream_chat(messages: list[dict], distinct_id: str = "anonymous") -> AsyncIterator[str]:
     """Agentic loop: stream text, handle tool calls, continue until done."""
 
     # Convert to Anthropic message format (role/content only)
@@ -157,7 +174,7 @@ async def _stream_chat(messages: list[dict]) -> AsyncIterator[str]:
             tool_results = []
             for tu in tool_uses:
                 yield f"data: {json.dumps({'type': 'tool_call', 'name': tu.name, 'input': tu.input})}\n\n"
-                result = _run_tool(tu.name, tu.input)
+                result = _run_tool(tu.name, tu.input, distinct_id=distinct_id)
                 yield f"data: {json.dumps({'type': 'tool_result', 'result': result[:2000]})}\n\n"
                 tool_results.append({
                     "type": "tool_result",
@@ -170,14 +187,21 @@ async def _stream_chat(messages: list[dict]) -> AsyncIterator[str]:
 
 
 @router.post("/api/chat")
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, request: Request):
     if not config.ANTHROPIC_API_KEY:
         raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY not configured")
     if not req.messages:
         raise HTTPException(status_code=400, detail="messages must not be empty")
 
+    distinct_id = request.headers.get("X-PostHog-Distinct-Id", "anonymous")
+
+    if posthog_client:
+        posthog_client.capture(distinct_id, "chat_message_sent", {
+            "message_count": len(req.messages),
+        })
+
     return StreamingResponse(
-        _stream_chat(req.messages),
+        _stream_chat(req.messages, distinct_id=distinct_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

@@ -9,6 +9,7 @@ dependencies = [
     "duckdb>=1.1",
     "anthropic>=0.40",
     "pydantic>=2.0",
+    "posthog>=3.0",
 ]
 
 [project.optional-dependencies]

@@ -174,6 +174,7 @@
                 (window.sa_event.q = window.sa_event.q || []).push([].slice.call(arguments));
             };
             window.sa_event('area_' + sectorCode.toLowerCase());
+            if (window.posthog) posthog.capture('area_page_viewed', { postcode_district: sectorCode });
         }
 
         buildPropertyTypeFilters();
@@ -574,12 +575,15 @@
         // Download buttons
         document.getElementById('download-price').addEventListener('click', function () {
             downloadChart('price-chart', 'Average Price by Year', true, sectorCode + '-prices');
+            if (window.posthog) posthog.capture('chart_downloaded', { chart_type: 'price', postcode_district: sectorCode });
         });
         document.getElementById('download-median').addEventListener('click', function () {
             downloadChart('median-chart', 'Median Price by Year', true, sectorCode + '-median');
+            if (window.posthog) posthog.capture('chart_downloaded', { chart_type: 'median', postcode_district: sectorCode });
         });
         document.getElementById('download-volume').addEventListener('click', function () {
             downloadChart('volume-chart', 'Transaction Volume by Year', false, sectorCode + '-volume');
+            if (window.posthog) posthog.capture('chart_downloaded', { chart_type: 'volume', postcode_district: sectorCode });
         });
     }
 
@@ -646,7 +650,9 @@
         document.querySelectorAll('.copy-embed-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 const codeEl = document.getElementById(btn.dataset.target);
+                const chartKey = btn.dataset.target ? btn.dataset.target.replace('embed-code-', '') : 'unknown';
                 navigator.clipboard.writeText(codeEl.textContent).then(function () {
+                    if (window.posthog) posthog.capture('embed_code_copied', { chart_type: chartKey, postcode_district: sectorCode });
                     const orig = btn.textContent;
                     btn.textContent = 'Copied!';
                     setTimeout(function () { btn.textContent = orig; }, 2000);

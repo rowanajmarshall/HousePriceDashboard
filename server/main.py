@@ -8,19 +8,29 @@ Static files are served from /public (same as before).
 API routes are mounted under /api/.
 """
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from .analytics import posthog_client
 from .chat import router as chat_router
 from .data import router as data_router
 from .pages import router as pages_router
 
 ROOT = Path(__file__).parent.parent
 
-app = FastAPI(title="House Price Dashboard API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    if posthog_client:
+        posthog_client.flush()
+
+
+app = FastAPI(title="House Price Dashboard API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

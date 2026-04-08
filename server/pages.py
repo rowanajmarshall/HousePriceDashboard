@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
-from .database import get_connection
+from .database import execute_raw
 from .data import _load_district
 
 _POSTCODE_RE = re.compile(r"^[A-Z]{1,2}\d{1,2}[A-Z]?$")
@@ -101,11 +101,8 @@ def _html_template() -> str:
 
 
 def _district_name(code: str) -> str | None:
-    con = get_connection()
-    row = con.execute(
-        "SELECT name FROM district_names WHERE district = ?", [code]
-    ).fetchone()
-    return row[0] if row else None
+    rows, _ = execute_raw("SELECT name FROM district_names WHERE district = ?", [code])
+    return rows[0][0] if rows else None
 
 
 def _ssr_summary(code: str, place: str | None) -> str | None:

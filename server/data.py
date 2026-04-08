@@ -6,29 +6,21 @@ All results are cached in-process with lru_cache (safe: DB is read-only).
 
 from functools import lru_cache
 
-import duckdb
 from fastapi import APIRouter, HTTPException
 
-from .database import get_connection
+from .database import execute_raw
 
 router = APIRouter(prefix="/api/data")
-
-
-def _raw_connection() -> duckdb.DuckDBPyConnection:
-    """Return the shared read-only connection (bypasses MAX_ROWS cap)."""
-    return get_connection()
 
 
 # ---------------------------------------------------------------------------
 # /api/data/prices/{year}
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=10)
 def _load_prices(year: int) -> dict:
-    con = _raw_connection()
-
     # Per-type stats (D, S, T, F) for the given year
-    rows = con.execute("""
+    rows, _ = execute_raw("""
         SELECT
             district,
             property_type,
@@ -39,10 +31,10 @@ def _load_prices(year: int) -> dict:
         WHERE YEAR(date) = ?
           AND property_type IN ('D', 'S', 'T', 'F')
         GROUP BY district, property_type
-    """, [year]).fetchall()
+    """, [year])
 
     # All-types aggregate (true pooled avg/median across D+S+T+F)
-    all_rows = con.execute("""
+    all_rows, _ = execute_raw("""
         SELECT
             district,
             'A'                                    AS property_type,
@@ -53,7 +45,7 @@ def _load_prices(year: int) -> dict:
         WHERE YEAR(date) = ?
           AND property_type IN ('D', 'S', 'T', 'F')
         GROUP BY district
-    """, [year]).fetchall()
+    """, [year])
 
     data: dict[str, dict] = {}
     for district, prop_type, avg, median, count in rows + all_rows:
@@ -80,8 +72,7 @@ async def prices(year: int):
 
 @lru_cache(maxsize=None)
 def _load_inflation() -> dict:
-    con = _raw_connection()
-    rows = con.execute("SELECT year, index FROM cpi ORDER BY year").fetchall()
+    rows, _ = execute_raw("SELECT year, index FROM cpi ORDER BY year")
     return {
         "description": "UK CPI Index (2015 = 100). Source: ONS series D7BT",
         "base_year": 2015,
@@ -101,11 +92,9 @@ async def inflation():
 # /api/data/district/{code}  — all years for one district
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=512)
+@lru_cache(maxsize=256)
 def _load_district(code: str) -> dict:
-    con = _raw_connection()
-
-    rows = con.execute("""
+    rows, _ = execute_raw("""
         SELECT
             YEAR(date)                             AS year,
             property_type,
@@ -129,11 +118,12 @@ def _load_district(code: str) -> dict:
         WHERE district = ?
           AND property_type IN ('D', 'S', 'T', 'F')
         GROUP BY YEAR(date)
-    """, [code, code]).fetchall()
+    """, [code, code])
 
-    name_row = con.execute(
+    name_rows, _ = execute_raw(
         "SELECT name FROM district_names WHERE district = ?", [code]
-    ).fetchone()
+    )
+    name_row = name_rows[0] if name_rows else None
 
     data: dict[str, dict] = {}
     for year, prop_type, avg, median, count in rows:
@@ -166,8 +156,7 @@ async def get_district(code: str):
 
 @lru_cache(maxsize=None)
 def _load_district_names() -> dict:
-    con = _raw_connection()
-    rows = con.execute("SELECT district, name FROM district_names").fetchall()
+    rows, _ = execute_raw("SELECT district, name FROM district_names")
     return {district: name for district, name in rows}
 
 

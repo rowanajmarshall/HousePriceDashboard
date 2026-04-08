@@ -10,3 +10,6 @@ QUERY_TIMEOUT: int = int(os.environ.get("QUERY_TIMEOUT", "10"))  # seconds
 
 POSTHOG_PROJECT_TOKEN: str = os.environ.get("POSTHOG_PROJECT_TOKEN", "")
 POSTHOG_HOST: str = os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com")
+
+DUCKDB_MEMORY_LIMIT: str = os.environ.get("DUCKDB_MEMORY_LIMIT", "512MB")
+DUCKDB_THREADS: int = int(os.environ.get("DUCKDB_THREADS", "2"))

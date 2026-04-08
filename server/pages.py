@@ -5,6 +5,7 @@ GET /area/{code} — injects SEO meta tags for postcode district pages,
 replicating what the Cloudflare Worker previously did via HTMLRewriter.
 """
 
+import json
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -111,7 +112,7 @@ def _ssr_summary(code: str, place: str | None) -> str | None:
     Returns None if the district has no data (signals a 404).
     """
     try:
-        district_data = _load_district(code)
+        district_data = json.loads(_load_district(code))
     except Exception:
         return None
 

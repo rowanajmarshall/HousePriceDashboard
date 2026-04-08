@@ -4,9 +4,11 @@
 All results are cached in-process with lru_cache (safe: DB is read-only).
 """
 
+import json
 from functools import lru_cache
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 
 from .database import execute_raw
 
@@ -18,7 +20,7 @@ router = APIRouter(prefix="/api/data")
 # ---------------------------------------------------------------------------
 
 @lru_cache(maxsize=10)
-def _load_prices(year: int) -> dict:
+def _load_prices(year: int) -> bytes:
     # Per-type stats (D, S, T, F) for the given year
     rows, _ = execute_raw("""
         SELECT
@@ -53,7 +55,8 @@ def _load_prices(year: int) -> dict:
             data[district] = {}
         data[district][prop_type] = {"avg": avg, "median": median, "count": count}
 
-    return {"year": year, "data": data}
+    # Pre-serialize: one bytes object is far cheaper than thousands of Python dicts
+    return json.dumps({"year": year, "data": data}).encode()
 
 
 @router.get("/prices/{year}")
@@ -61,7 +64,7 @@ async def prices(year: int):
     if year < 1995 or year > 2100:
         raise HTTPException(status_code=400, detail="Invalid year")
     try:
-        return _load_prices(year)
+        return Response(content=_load_prices(year), media_type="application/json")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
@@ -93,7 +96,7 @@ async def inflation():
 # ---------------------------------------------------------------------------
 
 @lru_cache(maxsize=256)
-def _load_district(code: str) -> dict:
+def _load_district(code: str) -> bytes:
     rows, _ = execute_raw("""
         SELECT
             YEAR(date)                             AS year,
@@ -132,11 +135,11 @@ def _load_district(code: str) -> dict:
             data[key] = {}
         data[key][prop_type] = {"avg": avg, "median": median, "count": count}
 
-    return {
+    return json.dumps({
         "district": code,
         "name": name_row[0] if name_row else None,
         "data": data,
-    }
+    }).encode()
 
 
 @router.get("/district/{code}")
@@ -145,7 +148,7 @@ async def get_district(code: str):
     if not code or len(code) > 4:
         raise HTTPException(status_code=400, detail="Invalid district code")
     try:
-        return _load_district(code)
+        return Response(content=_load_district(code), media_type="application/json")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

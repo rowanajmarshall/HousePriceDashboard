@@ -11,7 +11,7 @@ API routes are mounted under /api/.
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -42,6 +42,19 @@ app.add_middleware(
 app.include_router(chat_router)
 app.include_router(data_router)
 app.include_router(pages_router)
+
+
+@app.middleware("http")
+async def cache_control(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path.startswith("/api/chat"):
+        # SSE stream — must never be cached
+        response.headers["Cache-Control"] = "no-store"
+    elif path.startswith("/api/"):
+        # Data API: short CDN cache, revalidate frequently
+        response.headers.setdefault("Cache-Control", "public, max-age=60, s-maxage=300")
+    return response
 
 
 @app.get("/api/")

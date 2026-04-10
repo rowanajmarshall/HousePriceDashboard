@@ -27,7 +27,10 @@ _AREA_PAGE = ROOT / "public" / "area-page.html"
 @lru_cache(maxsize=None)
 def _static(name: str) -> HTMLResponse:
     content = (ROOT / "public" / f"{name}.html").read_text()
-    return HTMLResponse(content=content)
+    return HTMLResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=300, s-maxage=86400"},
+    )
 
 
 @router.get("/compare", response_class=HTMLResponse)
@@ -239,4 +242,7 @@ async def area_page(code: str):
     html, has_data = _inject_meta(_html_template(), code)
     if not has_data:
         raise HTTPException(status_code=404)
-    return HTMLResponse(content=html)
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "public, max-age=3600, s-maxage=86400"},
+    )

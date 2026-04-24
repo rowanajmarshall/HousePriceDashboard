@@ -56,6 +56,9 @@ async def cache_control(request: Request, call_next):
     elif path.startswith("/api/"):
         # Data API: short CDN cache, revalidate frequently
         response.headers.setdefault("Cache-Control", "public, max-age=60, s-maxage=300")
+    else:
+        # Static files: always revalidate
+        response.headers.setdefault("Cache-Control", "no-cache")
     return response
 
 

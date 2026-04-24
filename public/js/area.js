@@ -717,7 +717,8 @@
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(sectorCode, 20, 35);
+        const headerLabel = districtName ? districtName + ' \u2014 ' + sectorCode : sectorCode;
+        ctx.fillText(headerLabel, 20, 35);
 
         // Chart subtitle
         ctx.font = '13px -apple-system, BlinkMacSystemFont, sans-serif';

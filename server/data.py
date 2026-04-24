@@ -148,7 +148,11 @@ async def get_district(code: str):
     if not code or len(code) > 4:
         raise HTTPException(status_code=400, detail="Invalid district code")
     try:
-        return Response(content=_load_district(code), media_type="application/json")
+        return Response(
+            content=_load_district(code),
+            media_type="application/json",
+            headers={"Cache-Control": "no-cache"},
+        )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 

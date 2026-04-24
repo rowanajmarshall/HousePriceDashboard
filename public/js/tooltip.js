@@ -15,6 +15,10 @@ const TooltipModule = (function() {
     // Store current sector geometry for screenshots
     let currentSectorGeometry = null;
 
+    // Store current selection for refresh
+    let currentFeature = null;
+    let currentLatlng = null;
+
     /**
      * Initialize the tooltip module
      * @param {HTMLElement} container - Map container element
@@ -53,6 +57,10 @@ const TooltipModule = (function() {
         // Store the color and geometry for screenshots
         currentSectorColor = color || '#3498db';
         currentSectorGeometry = feature.geometry;
+
+        // Store selection for refresh
+        currentFeature = feature;
+        currentLatlng = latlng;
 
         // Get sector info
         const sectorId = feature.properties.id;
@@ -612,6 +620,22 @@ const TooltipModule = (function() {
     }
 
     /**
+     * Refresh the active tooltip with current filter data (keeps selection)
+     */
+    function refresh() {
+        if (!activeTooltip || !currentFeature) return;
+
+        // Re-trigger the tooltip with stored selection
+        handleSectorClick({
+            detail: {
+                feature: currentFeature,
+                latlng: currentLatlng,
+                color: currentSectorColor
+            }
+        });
+    }
+
+    /**
      * Close the active tooltip
      */
     function close() {
@@ -619,6 +643,8 @@ const TooltipModule = (function() {
             activeTooltip.remove();
             activeTooltip = null;
         }
+        currentFeature = null;
+        currentLatlng = null;
     }
 
     /**
@@ -646,6 +672,7 @@ const TooltipModule = (function() {
         init,
         show,
         close,
+        refresh,
         isVisible
     };
 })();

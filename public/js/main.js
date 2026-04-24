@@ -684,9 +684,6 @@
         console.log('Filter changed:', event);
 
         try {
-            // Close any open tooltip
-            TooltipModule.close();
-
             // Disable filters during update
             FiltersModule.disable();
 
@@ -695,6 +692,9 @@
 
             // Update heatmap
             await HeatmapModule.update(event.state.year, event.state.propertyType);
+
+            // Refresh tooltip with new data (keeps selection)
+            TooltipModule.refresh();
 
             // Re-enable filters
             FiltersModule.enable();
@@ -732,7 +732,6 @@
         console.log('Change view filter changed:', event);
 
         try {
-            TooltipModule.close();
             FiltersModule.disable();
             showLoading(true, 'Calculating changes...');
 
@@ -743,6 +742,9 @@
                 event.state.propertyType,
                 adjustInflation
             );
+
+            // Refresh tooltip with new data (keeps selection)
+            TooltipModule.refresh();
 
             FiltersModule.enable();
             showLoading(false);

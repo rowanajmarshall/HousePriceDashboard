@@ -164,23 +164,59 @@
         let activeIndex = -1;
         let currentSuggestions = [];
 
+        // Build reverse index: lowercase name → [{ code, name }]
+        // Groups district codes that share the same place name
+        const nameToDistricts = {};
+        const districtNames = DataLoader.getDistrictNames();
+        if (districtNames) {
+            for (const [code, name] of Object.entries(districtNames)) {
+                const key = name.toLowerCase();
+                if (!nameToDistricts[key]) {
+                    nameToDistricts[key] = { name, codes: [] };
+                }
+                nameToDistricts[key].codes.push(code);
+            }
+        }
+
         function getSuggestions(query) {
             if (!query) return [];
             const q = query.toLowerCase();
             const results = [];
+            const seen = new Set();
 
-            // City matches
+            // City matches first (exact bounds)
             for (const [key, city] of Object.entries(CITIES)) {
                 if (city.name.toLowerCase().startsWith(q) || key.startsWith(q)) {
                     results.push({ type: 'city', label: city.name, key });
-                    if (results.length >= 4) break;
+                    seen.add(city.name.toLowerCase());
+                    if (results.length >= 3) break;
                 }
             }
 
+            // District name matches (place names from the data)
+            const sectorIds = new Set(HeatmapModule.getSectorIds());
+            for (const key of Object.keys(nameToDistricts)) {
+                if (results.length >= 8) break;
+                if (seen.has(key)) continue;
+                if (!key.startsWith(q)) continue;
+
+                const entry = nameToDistricts[key];
+                // Only include if at least one code is on the map
+                const activeCodes = entry.codes.filter(c => sectorIds.has(c));
+                if (activeCodes.length === 0) continue;
+
+                results.push({
+                    type: 'district',
+                    label: entry.name,
+                    key: activeCodes[0],
+                    codes: activeCodes
+                });
+                seen.add(key);
+            }
+
             // Postcode district matches (only if input looks like a postcode)
-            if (/^[a-z]/i.test(query)) {
+            if (/^[a-z]/i.test(query) && results.length < 8) {
                 const qUpper = query.toUpperCase().replace(/\s+/g, '');
-                const sectorIds = HeatmapModule.getSectorIds();
                 let added = 0;
                 for (const id of sectorIds) {
                     if (id.startsWith(qUpper) && added < 5) {
@@ -206,13 +242,15 @@
                 const li = document.createElement('li');
                 li.setAttribute('role', 'option');
 
-                const iconSvg = s.type === 'city'
-                    ? '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>'
-                    : '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>';
+                const iconSvg = s.type === 'postcode'
+                    ? '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>'
+                    : '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>';
+
+                const typeLabel = s.type === 'city' ? 'City' : s.type === 'district' ? 'Area' : 'Postcode';
 
                 li.innerHTML = iconSvg +
                     '<span class="autocomplete-label">' + s.label + '</span>' +
-                    '<span class="autocomplete-type">' + (s.type === 'city' ? 'City' : 'Postcode') + '</span>';
+                    '<span class="autocomplete-type">' + typeLabel + '</span>';
 
                 li.addEventListener('mousedown', function(e) {
                     e.preventDefault(); // Prevent input blur before click fires
@@ -269,6 +307,21 @@
                 updateUrlWithCity(cityByName[0]);
                 if (window.posthog) posthog.capture('postcode_searched', { search_type: 'city', query_length: term.length, success: true });
                 return;
+            }
+
+            // Try district name match (e.g. "St Albans", "Westminster")
+            const districtEntry = nameToDistricts[term.toLowerCase()];
+            if (districtEntry) {
+                const sectorIds = new Set(HeatmapModule.getSectorIds());
+                const activeCodes = districtEntry.codes.filter(c => sectorIds.has(c));
+                if (activeCodes.length > 0) {
+                    HeatmapModule.findAndZoomToSector(activeCodes[0]);
+                    searchBox.classList.remove('error');
+                    searchInput.blur();
+                    updateUrlWithPostcode(activeCodes[0]);
+                    if (window.posthog) posthog.capture('postcode_searched', { search_type: 'district_name', query_length: term.length, success: true });
+                    return;
+                }
             }
 
             const found = HeatmapModule.findAndZoomToSector(term);

@@ -420,6 +420,14 @@ const DataLoader = (function() {
     }
 
     /**
+     * Get the full district names map (code → name)
+     * @returns {Object|null} Map or null if not loaded
+     */
+    function getDistrictNames() {
+        return cache.districtNames || null;
+    }
+
+    /**
      * Check if data is loaded for a specific year
      * @param {number} year - Year to check
      * @returns {boolean}
@@ -466,6 +474,7 @@ const DataLoader = (function() {
         loadDistrictNames,
         loadDistrictData,
         getDistrictName,
+        getDistrictNames,
         preloadYears,
         getPriceStats,
         getAllPrices,

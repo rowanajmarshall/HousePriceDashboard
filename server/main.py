@@ -8,6 +8,8 @@ Static files are served from /public (same as before).
 API routes are mounted under /api/.
 """
 
+import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,19 +18,38 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from .admin import router as admin_router
 from .analytics import posthog_client
 from .chat import router as chat_router
 from .data import router as data_router
 from .pages import router as pages_router
+from .updater import check_and_update
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parent.parent
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Fire-and-forget S3 update check (doesn't block startup)
+    update_task = asyncio.create_task(_startup_update_check())
     yield
+    update_task.cancel()
+    try:
+        await update_task
+    except asyncio.CancelledError:
+        pass
     if posthog_client:
         posthog_client.flush()
+
+
+async def _startup_update_check():
+    try:
+        result = await check_and_update()
+        logger.info("Startup update check: %s", result)
+    except Exception:
+        logger.exception("Startup update check failed")
 
 
 app = FastAPI(title="House Price Dashboard API", lifespan=lifespan)
@@ -43,6 +64,7 @@ app.add_middleware(
 
 app.include_router(chat_router)
 app.include_router(data_router)
+app.include_router(admin_router)
 app.include_router(pages_router)
 
 

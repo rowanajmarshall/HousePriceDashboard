@@ -13,3 +13,17 @@ POSTHOG_HOST: str = os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com")
 
 DUCKDB_MEMORY_LIMIT: str = os.environ.get("DUCKDB_MEMORY_LIMIT", "128MB")
 DUCKDB_THREADS: int = int(os.environ.get("DUCKDB_THREADS", "2"))
+
+# Railway S3-compatible storage
+S3_ENDPOINT: str = os.environ.get("S3_ENDPOINT", "")
+S3_ACCESS_KEY_ID: str = os.environ.get("S3_ACCESS_KEY_ID", "")
+S3_SECRET_ACCESS_KEY: str = os.environ.get("S3_SECRET_ACCESS_KEY", "")
+S3_BUCKET: str = os.environ.get("S3_BUCKET", "")
+S3_LATEST_KEY: str = os.environ.get("S3_LATEST_KEY", "latest.duckdb")
+
+# Admin auth
+ADMIN_USER: str = os.environ.get("ADMIN_USER", "")
+ADMIN_PASS: str = os.environ.get("ADMIN_PASS", "")
+
+# Data directory for downloaded DB files
+DATA_DIR: Path = Path(os.environ.get("DATA_DIR", str(ROOT / "data")))

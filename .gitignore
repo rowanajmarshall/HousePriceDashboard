@@ -50,6 +50,7 @@ build/
 .env
 .env.local
 .env.*.local
+internal/
 
 # Temporary files
 *.tmp

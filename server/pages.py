@@ -13,6 +13,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 
+from .cache import register_cache
 from .database import execute_raw
 from .data import _load_district
 
@@ -31,6 +32,8 @@ def _static(name: str) -> HTMLResponse:
         content=content,
         headers={"Cache-Control": "public, max-age=300, s-maxage=86400"},
     )
+
+register_cache(_static)
 
 
 @router.get("/compare", response_class=HTMLResponse)
@@ -102,6 +105,8 @@ def _area_name(code: str) -> str | None:
 @lru_cache(maxsize=None)
 def _html_template() -> str:
     return _AREA_PAGE.read_text()
+
+register_cache(_html_template)
 
 
 def _district_name(code: str) -> str | None:

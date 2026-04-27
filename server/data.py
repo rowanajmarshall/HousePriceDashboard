@@ -10,6 +10,7 @@ from functools import lru_cache
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
+from .cache import register_cache
 from .database import execute_raw
 
 router = APIRouter(prefix="/api/data")
@@ -58,6 +59,8 @@ def _load_prices(year: int) -> bytes:
     # Pre-serialize: one bytes object is far cheaper than thousands of Python dicts
     return json.dumps({"year": year, "data": data}).encode()
 
+register_cache(_load_prices)
+
 
 @router.get("/prices/{year}")
 async def prices(year: int):
@@ -81,6 +84,8 @@ def _load_inflation() -> dict:
         "base_year": 2015,
         "data": {str(year): index for year, index in rows},
     }
+
+register_cache(_load_inflation)
 
 
 @router.get("/inflation")
@@ -141,6 +146,8 @@ def _load_district(code: str) -> bytes:
         "data": data,
     }).encode()
 
+register_cache(_load_district)
+
 
 @router.get("/district/{code}")
 async def get_district(code: str):
@@ -165,6 +172,8 @@ async def get_district(code: str):
 def _load_district_names() -> dict:
     rows, _ = execute_raw("SELECT district, name FROM district_names")
     return {district: name for district, name in rows}
+
+register_cache(_load_district_names)
 
 
 @router.get("/district-names")

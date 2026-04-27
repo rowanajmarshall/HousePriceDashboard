@@ -9,5 +9,11 @@ build-db:
 
 update-data: download-data build-db
 
+prod-upload-data:
+	./internal/prod-upload-data.sh
+
+test-upload-data:
+	./internal/test-upload-data.sh
+
 serve:
 	uv run uvicorn server.main:app --reload --port 8000

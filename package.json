@@ -1,0 +1,14 @@
+{
+  "name": "house-price-dashboard",
+  "private": true,
+  "scripts": {
+    "build": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.7.0",
+    "@types/leaflet": "^1.9.0"
+  }
+}

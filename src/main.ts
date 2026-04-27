@@ -1,0 +1,784 @@
+import * as DataLoader from './data-loader';
+import * as MapModule from './map';
+import * as HeatmapModule from './heatmap';
+import * as FiltersModule from './filters';
+import * as TabsModule from './tabs';
+import * as TooltipModule from './tooltip';
+import { CompareModule } from './compare-module';
+import type { FilterChangeEvent, ChangeViewFilterEvent, TabChangeEvent } from './types';
+
+// Expose CompareModule on window for tooltip cross-module access
+window.CompareModule = CompareModule;
+
+const app = {
+  initialized: false,
+  loading: true,
+};
+
+const config = {
+  defaultYear: 2025,
+  defaultPropertyType: 'A',
+  minYear: 1995,
+  maxYear: 2025,
+};
+
+const CITIES: Record<string, { bounds: [[number, number], [number, number]]; name: string }> = {
+  london: { bounds: [[51.28, -0.51], [51.69, 0.33]], name: 'London' },
+  manchester: { bounds: [[53.35, -2.35], [53.6, -1.95]], name: 'Manchester' },
+  birmingham: { bounds: [[52.35, -2.05], [52.6, -1.7]], name: 'Birmingham' },
+  leeds: { bounds: [[53.7, -1.75], [53.9, -1.4]], name: 'Leeds' },
+  liverpool: { bounds: [[53.32, -3.05], [53.52, -2.8]], name: 'Liverpool' },
+  sheffield: { bounds: [[53.3, -1.7], [53.5, -1.35]], name: 'Sheffield' },
+  bristol: { bounds: [[51.37, -2.75], [51.55, -2.45]], name: 'Bristol' },
+  edinburgh: { bounds: [[55.87, -3.4], [55.99, -3.05]], name: 'Edinburgh' },
+  glasgow: { bounds: [[55.78, -4.4], [55.93, -4.1]], name: 'Glasgow' },
+  newcastle: { bounds: [[54.92, -1.75], [55.05, -1.5]], name: 'Newcastle' },
+  nottingham: { bounds: [[52.87, -1.25], [53.07, -1.05]], name: 'Nottingham' },
+  cardiff: { bounds: [[51.42, -3.3], [51.55, -3.05]], name: 'Cardiff' },
+  oxford: { bounds: [[51.7, -1.3], [51.8, -1.2]], name: 'Oxford' },
+  cambridge: { bounds: [[52.17, -0.16], [52.23, 0.15]], name: 'Cambridge' },
+  brighton: { bounds: [[50.8, -0.2], [50.87, -0.1]], name: 'Brighton' },
+  southampton: { bounds: [[50.88, -1.45], [50.95, -1.35]], name: 'Southampton' },
+  portsmouth: { bounds: [[50.78, -1.12], [50.85, -1.05]], name: 'Portsmouth' },
+  leicester: { bounds: [[52.58, -1.18], [52.68, -1.09]], name: 'Leicester' },
+  coventry: { bounds: [[52.37, -1.58], [52.45, -1.47]], name: 'Coventry' },
+  plymouth: { bounds: [[50.36, -4.2], [50.42, -4.1]], name: 'Plymouth' },
+  exeter: { bounds: [[50.7, -3.55], [50.74, -3.51]], name: 'Exeter' },
+  york: { bounds: [[53.95, -1.1], [54.0, -1.07]], name: 'York' },
+  norwich: { bounds: [[52.61, 1.26], [52.65, 1.3]], name: 'Norwich' },
+  derby: { bounds: [[52.9, -1.53], [52.95, -1.47]], name: 'Derby' },
+  wolverhampton: { bounds: [[52.56, -2.16], [52.61, -2.09]], name: 'Wolverhampton' },
+  swansea: { bounds: [[51.6, -3.98], [51.65, -3.92]], name: 'Swansea' },
+  aberdeen: { bounds: [[57.1, -2.12], [57.2, -2.05]], name: 'Aberdeen' },
+  bournemouth: { bounds: [[50.71, -1.9], [50.76, -1.84]], name: 'Bournemouth' },
+  reading: { bounds: [[51.44, -1.0], [51.48, -0.97]], name: 'Reading' },
+  sunderland: { bounds: [[54.88, -1.41], [54.92, -1.37]], name: 'Sunderland' },
+  stoke: { bounds: [[53.0, -2.22], [53.06, -2.13]], name: 'Stoke-on-Trent' },
+  bradford: { bounds: [[53.77, -1.8], [53.83, -1.73]], name: 'Bradford' },
+  luton: { bounds: [[51.87, -0.43], [51.91, -0.39]], name: 'Luton' },
+};
+
+function getPostcodeFromUrl(): string | null {
+  const hash = window.location.hash;
+  if (hash && hash.length > 1) return decodeURIComponent(hash.slice(1));
+  return null;
+}
+
+function getStateFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    tab: params.get('tab') || 'price',
+    year: parseInt(params.get('year') || '') || config.defaultYear,
+    propertyType: params.get('type') || config.defaultPropertyType,
+    startYear: parseInt(params.get('start') || '') || 2014,
+    endYear: parseInt(params.get('end') || '') || config.defaultYear,
+    adjustmentMode: (params.get('adj') || 'nominal') as 'nominal' | 'real',
+  };
+}
+
+function updateUrlWithState(): void {
+  const tab = TabsModule.getActiveTab();
+  const params = new URLSearchParams();
+
+  params.set('tab', tab);
+
+  if (tab === 'price') {
+    const state = FiltersModule.getState();
+    params.set('year', String(state.year));
+    params.set('type', state.propertyType);
+  } else {
+    const state = FiltersModule.getChangeState();
+    params.set('start', String(state.startYear));
+    params.set('end', String(state.endYear));
+    params.set('type', state.propertyType);
+    params.set('adj', state.adjustmentMode);
+  }
+
+  const hash = window.location.hash;
+  const newUrl = '?' + params.toString() + hash;
+  window.history.replaceState(null, '', newUrl);
+}
+
+function updateUrlWithPostcode(postcode: string): void {
+  const search = window.location.search;
+  const newUrl = search + '#' + encodeURIComponent(postcode.toUpperCase());
+  window.history.pushState({ postcode }, '', newUrl);
+}
+
+function updateUrlWithCity(slug: string): void {
+  const search = window.location.search;
+  window.history.pushState({ city: slug }, '', search + '#' + slug);
+}
+
+function navigateToHash(hash: string): boolean {
+  const searchInput = document.getElementById('postcode-search') as HTMLInputElement | null;
+  const city = CITIES[hash.toLowerCase()];
+  if (city) {
+    MapModule.fitBounds(city.bounds);
+    if (searchInput) searchInput.value = city.name;
+    return true;
+  }
+  const found = HeatmapModule.findAndZoomToSector(hash);
+  if (found && searchInput) searchInput.value = hash.toUpperCase();
+  return found;
+}
+
+function handleUrlPostcode(): void {
+  const hash = getPostcodeFromUrl();
+  if (hash) navigateToHash(hash);
+}
+
+function initSearch(): void {
+  const searchInput = document.getElementById('postcode-search') as HTMLInputElement | null;
+  const searchBtn = document.getElementById('search-btn');
+  const searchBox = document.querySelector('.search-box');
+  const autocompleteList = document.getElementById('search-autocomplete');
+
+  if (!searchInput || !searchBtn || !searchBox || !autocompleteList) return;
+
+  let activeIndex = -1;
+  let currentSuggestions: Array<{ type: string; label: string; key: string; codes?: string[] }> = [];
+
+  const nameToDistricts: Record<string, { name: string; codes: string[] }> = {};
+  const districtNames = DataLoader.getDistrictNames();
+  if (districtNames) {
+    for (const [code, name] of Object.entries(districtNames)) {
+      const key = name.toLowerCase();
+      if (!nameToDistricts[key]) {
+        nameToDistricts[key] = { name, codes: [] };
+      }
+      nameToDistricts[key]!.codes.push(code);
+    }
+  }
+
+  function getSuggestions(query: string) {
+    if (!query) return [];
+    const q = query.toLowerCase();
+    const results: Array<{ type: string; label: string; key: string; codes?: string[] }> = [];
+    const seen = new Set<string>();
+
+    for (const [key, city] of Object.entries(CITIES)) {
+      if (city.name.toLowerCase().startsWith(q) || key.startsWith(q)) {
+        results.push({ type: 'city', label: city.name, key });
+        seen.add(city.name.toLowerCase());
+        if (results.length >= 3) break;
+      }
+    }
+
+    const sectorIds = new Set(HeatmapModule.getSectorIds());
+    for (const key of Object.keys(nameToDistricts)) {
+      if (results.length >= 8) break;
+      if (seen.has(key)) continue;
+      if (!key.startsWith(q)) continue;
+
+      const entry = nameToDistricts[key]!;
+      const activeCodes = entry.codes.filter((c) => sectorIds.has(c));
+      if (activeCodes.length === 0) continue;
+
+      results.push({
+        type: 'district',
+        label: entry.name,
+        key: activeCodes[0]!,
+        codes: activeCodes,
+      });
+      seen.add(key);
+    }
+
+    if (/^[a-z]/i.test(query) && results.length < 8) {
+      const qUpper = query.toUpperCase().replace(/\s+/g, '');
+      let added = 0;
+      for (const id of sectorIds) {
+        if (id.startsWith(qUpper) && added < 5) {
+          results.push({ type: 'postcode', label: id, key: id });
+          added++;
+        }
+      }
+    }
+
+    return results.slice(0, 8);
+  }
+
+  function renderSuggestions(suggestions: typeof currentSuggestions): void {
+    autocompleteList!.innerHTML = '';
+    activeIndex = -1;
+
+    if (suggestions.length === 0) {
+      autocompleteList!.classList.remove('visible');
+      return;
+    }
+
+    suggestions.forEach(function (s) {
+      const li = document.createElement('li');
+      li.setAttribute('role', 'option');
+
+      const iconSvg =
+        s.type === 'postcode'
+          ? '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>'
+          : '<svg class="autocomplete-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>';
+
+      const typeLabel = s.type === 'city' ? 'City' : s.type === 'district' ? 'Area' : 'Postcode';
+
+      li.innerHTML =
+        iconSvg +
+        '<span class="autocomplete-label">' +
+        s.label +
+        '</span>' +
+        '<span class="autocomplete-type">' +
+        typeLabel +
+        '</span>';
+
+      li.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        searchInput!.value = s.label;
+        closeAutocomplete();
+        performSearch();
+      });
+
+      autocompleteList!.appendChild(li);
+    });
+
+    autocompleteList!.classList.add('visible');
+    currentSuggestions = suggestions;
+  }
+
+  function closeAutocomplete(): void {
+    autocompleteList!.classList.remove('visible');
+    activeIndex = -1;
+  }
+
+  function setActiveItem(index: number): void {
+    const items = autocompleteList!.querySelectorAll('li');
+    items.forEach(function (li) {
+      li.classList.remove('active');
+    });
+    if (index >= 0 && index < items.length) {
+      items[index]!.classList.add('active');
+      searchInput!.value = currentSuggestions[index]!.label;
+    }
+    activeIndex = index;
+  }
+
+  function performSearch(): void {
+    const term = searchInput!.value.trim();
+    if (!term) return;
+
+    closeAutocomplete();
+
+    const city = CITIES[term.toLowerCase()];
+    if (city) {
+      MapModule.fitBounds(city.bounds);
+      searchBox!.classList.remove('error');
+      searchInput!.blur();
+      updateUrlWithCity(term.toLowerCase());
+      if (window.posthog) window.posthog.capture('postcode_searched', { search_type: 'city', query_length: term.length, success: true });
+      return;
+    }
+
+    const cityByName = Object.entries(CITIES).find(([, c]) => c.name.toLowerCase() === term.toLowerCase());
+    if (cityByName) {
+      MapModule.fitBounds(cityByName[1].bounds);
+      searchBox!.classList.remove('error');
+      searchInput!.blur();
+      updateUrlWithCity(cityByName[0]);
+      if (window.posthog) window.posthog.capture('postcode_searched', { search_type: 'city', query_length: term.length, success: true });
+      return;
+    }
+
+    const districtEntry = nameToDistricts[term.toLowerCase()];
+    if (districtEntry) {
+      const sectorIds = new Set(HeatmapModule.getSectorIds());
+      const activeCodes = districtEntry.codes.filter((c) => sectorIds.has(c));
+      if (activeCodes.length > 0) {
+        HeatmapModule.findAndZoomToSector(activeCodes[0]!);
+        searchBox!.classList.remove('error');
+        searchInput!.blur();
+        updateUrlWithPostcode(activeCodes[0]!);
+        if (window.posthog) window.posthog.capture('postcode_searched', { search_type: 'district_name', query_length: term.length, success: true });
+        return;
+      }
+    }
+
+    const found = HeatmapModule.findAndZoomToSector(term);
+
+    if (found) {
+      searchBox!.classList.remove('error');
+      searchInput!.blur();
+      updateUrlWithPostcode(term);
+      if (window.posthog) window.posthog.capture('postcode_searched', { search_type: 'postcode', query_length: term.length, success: true });
+    } else {
+      searchBox!.classList.add('error');
+      setTimeout(() => searchBox!.classList.remove('error'), 1500);
+      if (window.posthog) window.posthog.capture('postcode_searched', { search_type: 'unknown', query_length: term.length, success: false });
+    }
+  }
+
+  searchInput.addEventListener('keydown', function (e) {
+    const items = autocompleteList!.querySelectorAll('li');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveItem(Math.min(activeIndex + 1, items.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveItem(Math.max(activeIndex - 1, -1));
+    } else if (e.key === 'Escape') {
+      closeAutocomplete();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      performSearch();
+    }
+  });
+
+  searchBtn.addEventListener('click', performSearch);
+
+  searchInput.addEventListener('input', function () {
+    searchBox!.classList.remove('error');
+    const suggestions = getSuggestions(searchInput!.value.trim());
+    renderSuggestions(suggestions);
+  });
+
+  searchInput.addEventListener('blur', function () {
+    setTimeout(closeAutocomplete, 150);
+  });
+
+  window.addEventListener('popstate', async function (e: PopStateEvent) {
+    const urlState = getStateFromUrl();
+
+    FiltersModule.setState({
+      propertyType: urlState.propertyType,
+      year: urlState.year,
+    });
+    FiltersModule.setChangeState({
+      propertyType: urlState.propertyType,
+      startYear: urlState.startYear,
+      endYear: urlState.endYear,
+      adjustmentMode: urlState.adjustmentMode,
+    });
+
+    if (urlState.tab === 'change') {
+      TabsModule.switchTab('change');
+      const adjustInflation = urlState.adjustmentMode === 'real';
+      await HeatmapModule.updateChangeView(urlState.startYear, urlState.endYear, urlState.propertyType, adjustInflation);
+    } else {
+      TabsModule.switchTab('price');
+      await HeatmapModule.update(urlState.year, urlState.propertyType);
+    }
+
+    updateControlsSummary();
+
+    const state = e.state as { city?: string; postcode?: string } | null;
+    if (state?.city) {
+      const city = CITIES[state.city];
+      if (city) {
+        MapModule.fitBounds(city.bounds);
+        searchInput.value = city.name;
+      }
+    } else if (state?.postcode) {
+      HeatmapModule.findAndZoomToSector(state.postcode);
+      searchInput.value = state.postcode.toUpperCase();
+    } else {
+      const hash = getPostcodeFromUrl();
+      if (hash) navigateToHash(hash);
+    }
+  });
+}
+
+function initEmbedModal(): void {
+  const openBtn = document.getElementById('embed-btn');
+  const modal = document.getElementById('embed-modal');
+  if (!openBtn || !modal) return;
+
+  const closeBtn = modal.querySelector('.modal-close');
+  const codeArea = document.getElementById('embed-code') as HTMLTextAreaElement | null;
+  const copyBtn = document.getElementById('copy-embed-btn');
+
+  function generateCode(): string {
+    const tab = TabsModule.getActiveTab();
+    const embedParams = new URLSearchParams();
+
+    if (tab === 'change') {
+      const state = FiltersModule.getChangeState();
+      embedParams.set('year', String(state.endYear));
+      embedParams.set('type', state.propertyType);
+    } else {
+      const state = FiltersModule.getState();
+      embedParams.set('year', String(state.year));
+      embedParams.set('type', state.propertyType);
+    }
+
+    const src = 'https://housepricedashboard.co.uk/embed?' + embedParams.toString();
+    return '<iframe\n  src="' + src + '"\n  width="800" height="500"\n  frameborder="0"\n  style="border:0;border-radius:4px"\n></iframe>';
+  }
+
+  function openModal(): void {
+    if (codeArea) codeArea.value = generateCode();
+    modal!.style.display = 'flex';
+    if (codeArea) codeArea.select();
+  }
+
+  function closeModal(): void {
+    modal!.style.display = 'none';
+  }
+
+  openBtn.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal!.style.display !== 'none') closeModal();
+  });
+
+  if (copyBtn && codeArea) {
+    copyBtn.addEventListener('click', async function () {
+      try {
+        await navigator.clipboard.writeText(codeArea!.value);
+      } catch {
+        codeArea!.select();
+        document.execCommand('copy');
+      }
+      const original = copyBtn!.textContent;
+      copyBtn!.textContent = 'Copied!';
+      copyBtn!.classList.add('copied');
+      setTimeout(function () {
+        copyBtn!.textContent = original;
+        copyBtn!.classList.remove('copied');
+      }, 2000);
+    });
+  }
+}
+
+function initShareButton(): void {
+  const btn = document.getElementById('share-btn');
+  if (!btn) return;
+
+  btn.addEventListener('click', async function () {
+    const url = window.location.href;
+
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      textarea.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+
+    if (window.posthog) window.posthog.capture('share_url_copied');
+
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML =
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!';
+    btn.classList.add('copied');
+
+    setTimeout(function () {
+      btn.innerHTML = originalHTML;
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function initMobileCollapse(): void {
+  const panel = document.querySelector('.controls-panel');
+  const toggle = document.querySelector('.collapse-toggle');
+  const handleLabel = document.querySelector('.handle-label');
+
+  if (!toggle || !panel) return;
+
+  const isMobile = window.innerWidth <= 768;
+  const storedState = localStorage.getItem('controlsCollapsed');
+
+  let isCollapsed: boolean;
+  if (storedState !== null) {
+    isCollapsed = storedState === 'true';
+  } else {
+    isCollapsed = isMobile;
+  }
+
+  if (isCollapsed) {
+    panel.classList.add('collapsed');
+    toggle.setAttribute('aria-expanded', 'false');
+    if (handleLabel) handleLabel.textContent = 'Show Filters';
+  }
+
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('collapsed');
+    const expanded = !panel.classList.contains('collapsed');
+    toggle.setAttribute('aria-expanded', String(expanded));
+    localStorage.setItem('controlsCollapsed', String(!expanded));
+
+    if (handleLabel) {
+      handleLabel.textContent = expanded ? 'Hide Filters' : 'Show Filters';
+    }
+
+    setTimeout(() => {
+      MapModule.invalidateSize();
+    }, 300);
+  });
+}
+
+function updateControlsSummary(): void {
+  const summary = document.querySelector('.controls-summary');
+  if (!summary) return;
+
+  const viewMode = HeatmapModule.getViewMode();
+  if (viewMode === 'change') {
+    const state = FiltersModule.getChangeState();
+    const mode = state.adjustmentMode === 'real' ? 'Real' : 'Nominal';
+    summary.textContent = `${mode} \u2022 ${state.startYear}-${state.endYear}`;
+  } else {
+    const state = FiltersModule.getState();
+    summary.textContent = `Price \u2022 ${state.year}`;
+  }
+}
+
+async function handleFilterChange(event: FilterChangeEvent): Promise<void> {
+  if (!app.initialized) return;
+  if (TabsModule.getActiveTab() !== 'price') return;
+
+  console.log('Filter changed:', event);
+
+  try {
+    FiltersModule.disable();
+    showLoading(true, 'Updating map...');
+
+    await HeatmapModule.update(event.state.year, event.state.propertyType);
+    TooltipModule.refresh();
+    FiltersModule.enable();
+    showLoading(false);
+    updateControlsSummary();
+    updateUrlWithState();
+
+    if (event.type === 'year') {
+      preloadAdjacentYears(event.state.year);
+      if (window.posthog) window.posthog.capture('year_filter_changed', { year: event.state.year, property_type: event.state.propertyType });
+    }
+  } catch (error) {
+    console.error('Failed to update heatmap:', error);
+    FiltersModule.enable();
+    showLoading(false);
+  }
+}
+
+async function handleChangeViewFilterChange(event: ChangeViewFilterEvent): Promise<void> {
+  if (!app.initialized) return;
+  if (TabsModule.getActiveTab() !== 'change') return;
+
+  console.log('Change view filter changed:', event);
+
+  try {
+    FiltersModule.disable();
+    showLoading(true, 'Calculating changes...');
+
+    const adjustInflation = event.state.adjustmentMode === 'real';
+    await HeatmapModule.updateChangeView(event.state.startYear, event.state.endYear, event.state.propertyType, adjustInflation);
+    TooltipModule.refresh();
+    FiltersModule.enable();
+    showLoading(false);
+    updateControlsSummary();
+    updateUrlWithState();
+  } catch (error) {
+    console.error('Failed to update change view:', error);
+    FiltersModule.enable();
+    showLoading(false);
+  }
+}
+
+async function handleTabChange(event: TabChangeEvent): Promise<void> {
+  if (!app.initialized) return;
+
+  console.log('Tab changed:', event.tab);
+
+  try {
+    TooltipModule.close();
+    FiltersModule.disable();
+
+    if (event.tab === 'price') {
+      showLoading(true, 'Loading price data...');
+      await HeatmapModule.switchToPriceView();
+    } else if (event.tab === 'change') {
+      showLoading(true, 'Calculating changes...');
+      const changeState = FiltersModule.getChangeState();
+      const adjustInflation = changeState.adjustmentMode === 'real';
+      await HeatmapModule.updateChangeView(changeState.startYear, changeState.endYear, changeState.propertyType, adjustInflation);
+    }
+
+    FiltersModule.enable();
+    showLoading(false);
+
+    if (window.posthog) window.posthog.capture('tab_switched', { tab: event.tab });
+    updateControlsSummary();
+    updateUrlWithState();
+  } catch (error) {
+    console.error('Failed to switch tab:', error);
+    FiltersModule.enable();
+    showLoading(false);
+  }
+}
+
+function preloadAdjacentYears(currentYear: number): void {
+  const yearsToPreload: number[] = [];
+  if (currentYear > config.minYear) yearsToPreload.push(currentYear - 1);
+  if (currentYear < config.maxYear) yearsToPreload.push(currentYear + 1);
+
+  DataLoader.preloadYears(yearsToPreload).catch((err) => {
+    console.warn('Failed to preload years:', err);
+  });
+}
+
+function showLoading(show: boolean, message?: string): void {
+  const overlay = document.getElementById('loading-overlay');
+  if (!overlay) return;
+
+  if (show) {
+    overlay.classList.remove('hidden');
+    const messageEl = overlay.querySelector('p');
+    if (messageEl && message) messageEl.textContent = message;
+  } else {
+    overlay.classList.add('hidden');
+  }
+}
+
+function showError(message: string): void {
+  const overlay = document.getElementById('loading-overlay');
+  if (!overlay) return;
+
+  overlay.innerHTML = `
+    <div style="text-align: center; color: #c0392b;">
+      <p style="font-size: 18px; margin-bottom: 16px;">Error</p>
+      <p>${message}</p>
+      <button onclick="location.reload()" style="margin-top: 16px; padding: 8px 16px; cursor: pointer;">
+        Retry
+      </button>
+    </div>
+  `;
+}
+
+function initCompareTray(): void {
+  const goBtn = document.getElementById('compare-tray-go');
+  const clearBtn = document.getElementById('compare-tray-clear');
+
+  if (goBtn) {
+    goBtn.addEventListener('click', function () {
+      CompareModule.navigate();
+    });
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', function () {
+      CompareModule.clear();
+      document.querySelectorAll('#active-tooltip .compare-btn').forEach(function (btn) {
+        const lbl = btn.querySelector('.compare-btn-label');
+        if (lbl) lbl.textContent = 'Compare';
+        btn.classList.remove('added');
+      });
+    });
+  }
+
+  CompareModule.renderTray();
+}
+
+async function init(): Promise<void> {
+  console.log('Initializing UK House Price Heatmap...');
+
+  try {
+    showLoading(true);
+    initMobileCollapse();
+    initCompareTray();
+    initShareButton();
+    initEmbedModal();
+
+    const map = MapModule.init('map');
+    console.log('Map initialized');
+
+    const mapContainer = document.querySelector('.map-container') as HTMLElement | null;
+    TooltipModule.init(mapContainer);
+    console.log('Tooltip initialized');
+
+    FiltersModule.init({
+      onChange: handleFilterChange,
+      onChangeView: handleChangeViewFilterChange,
+      minYear: config.minYear,
+      maxYear: config.maxYear,
+      defaultPropertyType: config.defaultPropertyType,
+      defaultYear: config.defaultYear,
+    });
+    console.log('Filters initialized');
+
+    TabsModule.init({ onChange: handleTabChange });
+    console.log('Tabs initialized');
+
+    const urlState = getStateFromUrl();
+    FiltersModule.setState({
+      propertyType: urlState.propertyType,
+      year: urlState.year,
+    });
+    FiltersModule.setChangeState({
+      propertyType: urlState.propertyType,
+      startYear: urlState.startYear,
+      endYear: urlState.endYear,
+      adjustmentMode: urlState.adjustmentMode,
+    });
+    console.log('URL state applied:', urlState);
+
+    console.log('Loading data...');
+    const [boundaries] = await Promise.all([
+      DataLoader.loadBoundaries(),
+      DataLoader.loadPriceData(urlState.year),
+      DataLoader.loadInflation(),
+      DataLoader.loadDistrictNames(),
+    ]);
+    console.log('Data loaded');
+
+    await HeatmapModule.init(map, boundaries, urlState.year, urlState.propertyType);
+    console.log('Heatmap initialized');
+
+    if (urlState.tab === 'change') {
+      TabsModule.switchTab('change');
+      const adjustInflation = urlState.adjustmentMode === 'real';
+      await HeatmapModule.updateChangeView(urlState.startYear, urlState.endYear, urlState.propertyType, adjustInflation);
+    }
+
+    initSearch();
+    console.log('Search initialized');
+
+    handleUrlPostcode();
+    updateUrlWithState();
+    preloadAdjacentYears(urlState.year);
+
+    app.initialized = true;
+    app.loading = false;
+    showLoading(false);
+    updateControlsSummary();
+
+    console.log('Application ready');
+  } catch (error) {
+    console.error('Failed to initialize application:', error);
+    showError('Failed to load application. Please refresh the page.');
+  }
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+window.addEventListener('resize', function () {
+  MapModule.invalidateSize();
+});
+
+// Expose for debugging
+window.HousePriceApp = {
+  DataLoader,
+  MapModule,
+  HeatmapModule,
+  FiltersModule,
+  TabsModule,
+  TooltipModule,
+  CompareModule,
+};

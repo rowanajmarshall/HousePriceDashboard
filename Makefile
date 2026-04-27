@@ -9,5 +9,14 @@ build-db:
 
 update-data: download-data build-db
 
-serve:
+build-frontend:
+	npm run build
+
+watch-frontend:
+	npm run watch
+
+typecheck:
+	npm run typecheck
+
+serve: build-frontend
 	uv run uvicorn server.main:app --reload --port 8000

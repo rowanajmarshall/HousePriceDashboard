@@ -48,7 +48,7 @@ class DatabaseManager:
         con.execute(f"SET threads={config.DUCKDB_THREADS}")
         self._con = con
         self._db_path = path
-        logger.info("Opened DuckDB file: %s", path.name)
+        print(f"Opened DuckDB file: {path.name}", flush=True)
 
     def swap(self, new_path: Path) -> None:
         """Hot-swap to a new database file.
@@ -85,10 +85,10 @@ class DatabaseManager:
             except Exception:
                 logger.warning("Swap callback failed", exc_info=True)
 
-        logger.info(
-            "Swapped active DuckDB from %s to %s",
-            old_path.name if old_path else "<none>",
-            new_path.name,
+        print(
+            "Swapped active DuckDB from "
+            f"{old_path.name if old_path else '<none>'} to {new_path.name}",
+            flush=True,
         )
 
     def execute_raw(self, sql: str, params: list = []) -> tuple[list[tuple], list[str]]:

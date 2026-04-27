@@ -15,10 +15,10 @@ DUCKDB_MEMORY_LIMIT: str = os.environ.get("DUCKDB_MEMORY_LIMIT", "128MB")
 DUCKDB_THREADS: int = int(os.environ.get("DUCKDB_THREADS", "2"))
 
 # Railway S3-compatible storage
-S3_ENDPOINT: str = os.environ.get("S3_ENDPOINT", "")
-S3_ACCESS_KEY_ID: str = os.environ.get("S3_ACCESS_KEY_ID", "")
-S3_SECRET_ACCESS_KEY: str = os.environ.get("S3_SECRET_ACCESS_KEY", "")
-S3_BUCKET: str = os.environ.get("S3_BUCKET", "")
+AWS_ENDPOINT_URL: str = os.environ.get("AWS_ENDPOINT_URL", "")
+S3_ACCESS_KEY_ID: str = os.environ.get("AWS_ACCESS_KEY_ID", "")
+S3_SECRET_ACCESS_KEY: str = os.environ.get("AWS_SECRET_ACCESS_KEY", "")
+S3_BUCKET: str = os.environ.get("AWS_S3_BUCKET_NAME", "")
 S3_LATEST_KEY: str = os.environ.get("S3_LATEST_KEY", "latest.duckdb")
 
 # Admin auth

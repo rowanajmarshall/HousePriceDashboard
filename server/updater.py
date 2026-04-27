@@ -40,7 +40,7 @@ def _current_date() -> date | None:
 def _make_s3_client():
     return boto3.client(
         "s3",
-        endpoint_url=config.S3_ENDPOINT or None,
+        endpoint_url=config.AWS_ENDPOINT_URL or None,
         aws_access_key_id=config.S3_ACCESS_KEY_ID or None,
         aws_secret_access_key=config.S3_SECRET_ACCESS_KEY or None,
     )
@@ -70,7 +70,9 @@ async def check_and_update() -> dict:
 
     Returns a status dict for logging/admin visibility.
     """
+    print("Entered check_and_update()", flush=True)
     if not config.S3_BUCKET:
+        print("Skipping DuckDB update check: S3_BUCKET not configured", flush=True)
         logger.debug("S3 not configured, skipping update check")
         return {"status": "skipped", "reason": "S3_BUCKET not configured"}
 
@@ -80,9 +82,11 @@ async def check_and_update() -> dict:
             s3.head_object, Bucket=config.S3_BUCKET, Key=config.S3_LATEST_KEY
         )
     except NoCredentialsError:
+        print("DuckDB update check failed: AWS credentials not configured", flush=True)
         logger.error("AWS credentials not configured")
         return {"status": "error", "reason": "no credentials"}
     except ClientError as e:
+        print(f"DuckDB update check failed during head_object: {e}", flush=True)
         logger.error("S3 head_object failed: %s", e)
         return {"status": "error", "reason": str(e)}
 
@@ -102,6 +106,10 @@ async def check_and_update() -> dict:
         flush=True,
     )
     if current and remote_date <= current:
+        print(
+            f"No DuckDB update needed: current={current.isoformat()} remote={remote_date.isoformat()}",
+            flush=True,
+        )
         logger.debug("No update needed (current=%s, remote=%s)", current, remote_date)
         return {"status": "up_to_date", "current": str(current), "remote": str(remote_date)}
 

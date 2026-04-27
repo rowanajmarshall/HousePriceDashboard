@@ -45,10 +45,12 @@ async def lifespan(app: FastAPI):
 
 
 async def _startup_update_check():
+    print("Starting startup DuckDB update check", flush=True)
     try:
         result = await check_and_update()
-        logger.info("Startup update check: %s", result)
+        print(f"Startup DuckDB update check result: {result}", flush=True)
     except Exception:
+        print("Startup DuckDB update check failed", flush=True)
         logger.exception("Startup update check failed")
 
 

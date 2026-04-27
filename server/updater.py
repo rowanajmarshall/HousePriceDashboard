@@ -49,12 +49,17 @@ def _make_s3_client():
 def _download_from_s3(dest: Path) -> None:
     """Download the latest DB from S3. Blocking I/O."""
     s3 = _make_s3_client()
-    logger.info("Downloading s3://%s/%s -> %s", config.S3_BUCKET, config.S3_LATEST_KEY, dest)
+    logger.info(
+        "Downloading new DuckDB file from s3://%s/%s to %s",
+        config.S3_BUCKET,
+        config.S3_LATEST_KEY,
+        dest.name,
+    )
     tmp = dest.with_suffix(".tmp")
     try:
         s3.download_file(config.S3_BUCKET, config.S3_LATEST_KEY, str(tmp))
         tmp.rename(dest)
-        logger.info("Download complete: %s", dest)
+        logger.info("Finished downloading DuckDB file: %s", dest.name)
     except Exception:
         if tmp.exists():
             tmp.unlink()
@@ -90,6 +95,12 @@ async def check_and_update() -> dict:
         remote_date = head["LastModified"].date()
 
     current = _current_date()
+    logger.info(
+        "Current DuckDB file: %s (date=%s); remote DuckDB timestamp: %s",
+        db.current_path.name if db.current_path else "<none>",
+        current.isoformat() if current else "unknown",
+        remote_date.isoformat(),
+    )
     if current and remote_date <= current:
         logger.debug("No update needed (current=%s, remote=%s)", current, remote_date)
         return {"status": "up_to_date", "current": str(current), "remote": str(remote_date)}
@@ -97,8 +108,13 @@ async def check_and_update() -> dict:
     dest = config.DATA_DIR / f"{remote_date.isoformat()}.duckdb"
 
     if dest.exists():
-        logger.info("File already exists, swapping: %s", dest)
+        logger.info(
+            "Remote DuckDB timestamp %s already exists locally as %s; swapping without download",
+            remote_date.isoformat(),
+            dest.name,
+        )
     else:
+        logger.info("Remote DuckDB timestamp %s requires a new download", remote_date.isoformat())
         await asyncio.to_thread(_download_from_s3, dest)
 
     db.swap(dest)

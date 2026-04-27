@@ -48,7 +48,7 @@ class DatabaseManager:
         con.execute(f"SET threads={config.DUCKDB_THREADS}")
         self._con = con
         self._db_path = path
-        logger.info("Opened DuckDB: %s", path)
+        logger.info("Opened DuckDB file: %s", path.name)
 
     def swap(self, new_path: Path) -> None:
         """Hot-swap to a new database file.
@@ -69,6 +69,7 @@ class DatabaseManager:
         test_con.close()
 
         with self._query_lock:
+            old_path = self._db_path
             old_con = self._con
             self._open(new_path)
             if old_con is not None:
@@ -84,19 +85,23 @@ class DatabaseManager:
             except Exception:
                 logger.warning("Swap callback failed", exc_info=True)
 
-        logger.info("Swapped to: %s", new_path)
+        logger.info(
+            "Swapped active DuckDB from %s to %s",
+            old_path.name if old_path else "<none>",
+            new_path.name,
+        )
 
     def execute_raw(self, sql: str, params: list = []) -> tuple[list[tuple], list[str]]:
         """Execute a SQL query and return raw rows, serialised through a single lock."""
-        con = self.get_connection()
         with self._query_lock:
+            con = self.get_connection()
             rel = con.execute(sql, params)
             return rel.fetchall(), [desc[0] for desc in rel.description]
 
     def execute_query(self, sql: str) -> list[dict[str, Any]]:
         """Execute a SQL query and return rows as a list of dicts, capped at MAX_ROWS."""
-        con = self.get_connection()
         with self._query_lock:
+            con = self.get_connection()
             rel = con.execute(sql)
             columns = [desc[0] for desc in rel.description]
             rows = rel.fetchmany(config.MAX_ROWS + 1)

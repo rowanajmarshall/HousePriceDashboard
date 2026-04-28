@@ -145,6 +145,7 @@ const FiltersModule = (function() {
     function initYearSlider(minYear, maxYear, defaultYear) {
         const slider = document.getElementById('year-slider');
         const display = document.getElementById('year-value');
+        const disclaimer = document.getElementById('year-disclaimer');
 
         if (!slider || !display) return;
 
@@ -156,11 +157,13 @@ const FiltersModule = (function() {
         // Update display
         display.textContent = defaultYear;
         updateSliderFill(slider);
+        if (disclaimer) disclaimer.style.visibility = defaultYear >= maxYear ? 'visible' : 'hidden';
 
         // Add input listener (fires continuously while dragging)
         slider.addEventListener('input', function() {
             display.textContent = this.value;
             updateSliderFill(this);
+            if (disclaimer) disclaimer.style.visibility = parseInt(this.value, 10) >= maxYear ? 'visible' : 'hidden';
         });
 
         // Add change listener (fires when released)
@@ -334,8 +337,10 @@ const FiltersModule = (function() {
             // Update slider
             const slider = document.getElementById('year-slider');
             const display = document.getElementById('year-value');
+            const disclaimer = document.getElementById('year-disclaimer');
             if (slider) { slider.value = state.year; updateSliderFill(slider); }
             if (display) display.textContent = state.year;
+            if (disclaimer) disclaimer.style.visibility = state.year >= parseInt(slider?.max || 0, 10) ? 'visible' : 'hidden';
         }
 
         if (triggerCallback && onChangeCallback && Object.keys(changed).length > 0) {

@@ -412,6 +412,14 @@ html, body {
     color: var(--color-primary);
 }
 
+.year-disclaimer {
+    text-align: center;
+    font-size: 10px;
+    color: #999;
+    font-style: italic;
+    min-height: 10px;
+}
+
 .year-range-sep {
     font-weight: 400;
     opacity: 0.5;

@@ -190,8 +190,15 @@ const FiltersModule = (function() {
         const startDisplay = document.getElementById('start-year-value');
         const endDisplay   = document.getElementById('end-year-value');
         const fill         = document.getElementById('change-range-fill');
+        const changeDisclaimer = document.getElementById('change-year-disclaimer');
 
         if (!startSlider || !endSlider) return;
+
+        function updateChangeDisclaimer() {
+            if (!changeDisclaimer) return;
+            const hasMax = parseInt(startSlider.value, 10) >= maxYear || parseInt(endSlider.value, 10) >= maxYear;
+            changeDisclaimer.style.visibility = hasMax ? 'visible' : 'hidden';
+        }
 
         startSlider.min = endSlider.min = minYear;
         startSlider.max = endSlider.max = maxYear;
@@ -200,6 +207,7 @@ const FiltersModule = (function() {
         if (startDisplay) startDisplay.textContent = changeState.startYear;
         if (endDisplay)   endDisplay.textContent   = changeState.endYear;
         updateDualRangeFill(startSlider, endSlider, fill);
+        updateChangeDisclaimer();
 
         startSlider.addEventListener('input', function() {
             if (parseInt(this.value, 10) >= parseInt(endSlider.value, 10)) {
@@ -207,6 +215,7 @@ const FiltersModule = (function() {
             }
             if (startDisplay) startDisplay.textContent = this.value;
             updateDualRangeFill(startSlider, endSlider, fill);
+            updateChangeDisclaimer();
         });
 
         startSlider.addEventListener('change', function() {
@@ -229,6 +238,7 @@ const FiltersModule = (function() {
             }
             if (endDisplay) endDisplay.textContent = this.value;
             updateDualRangeFill(startSlider, endSlider, fill);
+            updateChangeDisclaimer();
         });
 
         endSlider.addEventListener('change', function() {

@@ -506,7 +506,7 @@
                             <span class="controls-label">Price</span>
                             <div class="mode-toggle">
                                 <button class="mode-btn active" data-mode="nominal">Nominal</button>
-                                <button class="mode-btn" data-mode="real">Real (2025 £)</button>
+                                <button class="mode-btn" data-mode="real">Real (2026 £)</button>
                             </div>
                         </div>
 
@@ -586,7 +586,12 @@
 
                     <!-- Chart 3: Transaction Volume -->
                     <div class="chart-section" data-chart="volume">
-                        <h2>Transaction Volume by Year</h2>
+                        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
+                            <h2 style="margin:0;">Transaction Volume by Year</h2>
+                            <label style="font-size:0.85rem; color:#666; cursor:pointer; display:flex; align-items:center; gap:0.35rem;">
+                                <input type="checkbox" id="ytd-toggle"> Show 2026 (YTD)
+                            </label>
+                        </div>
                         <div class="chart-wrapper">
                             <canvas id="volume-chart"></canvas>
                         </div>
@@ -619,7 +624,7 @@
 
                     <!-- Attribution -->
                     <div class="area-attribution">
-                        <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Inflation data: <a href="https://www.ons.gov.uk/" target="_blank" rel="noopener">ONS CPI series D7BT</a>. Real prices expressed in 2025 pounds.</p>
+                        <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Inflation data: <a href="https://www.ons.gov.uk/" target="_blank" rel="noopener">ONS CPI series D7BT</a>. Real prices expressed in 2026 pounds.</p>
                     </div>
 
                 </div>

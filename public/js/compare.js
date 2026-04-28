@@ -2,7 +2,7 @@
     'use strict';
 
     const START_YEAR = 1995;
-    const END_YEAR = 2025;
+    const END_YEAR = 2026;
     const YEARS = [];
     for (let y = START_YEAR; y <= END_YEAR; y++) YEARS.push(y);
 

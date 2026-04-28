@@ -1,8 +1,10 @@
 (function () {
     const START_YEAR = 1995;
-    const END_YEAR = 2025;
+    const END_YEAR = 2026;
+    const PARTIAL_YEAR = 2026; // current year with incomplete data
     const YEARS = [];
     for (let y = START_YEAR; y <= END_YEAR; y++) YEARS.push(y);
+    const COMPLETE_YEARS = YEARS.filter(y => y < PARTIAL_YEAR);
 
     const PROPERTY_TYPES = [
         { code: 'A', label: 'All',        color: '#2c3e50' },
@@ -159,7 +161,7 @@
 
         // Set initial meta tags with template description (updated with real data after load)
         if (!isEmbed) {
-            applyMetaTags(sectorCode, 'House price history for the ' + sectorCode + ' postcode district \u2014 explore average and median prices from 1995 to 2025 for detached, semi-detached, terraced and flat properties.');
+            applyMetaTags(sectorCode, 'House price history for the ' + sectorCode + ' postcode district \u2014 explore average and median prices from 1995 to 2026 for detached, semi-detached, terraced and flat properties.');
         }
 
         // Apply embed mode
@@ -228,7 +230,7 @@
                 if (latest) {
                     const priceStr = '\u00a3' + latest.price.toLocaleString('en-GB');
                     const locationStr = districtName ? districtName + ' (' + sectorCode + ')' : sectorCode;
-                    applyMetaTags(sectorCode, locationStr + ' house prices: average ' + priceStr + ' (' + latest.year + '). Explore 30 years of property price history (1995\u20132025) including detached, semi-detached, terraced and flat homes. Data from UK Land Registry.');
+                    applyMetaTags(sectorCode, locationStr + ' house prices: average ' + priceStr + ' (' + latest.year + '). Explore 30 years of property price history (1995\u20132026) including detached, semi-detached, terraced and flat homes. Data from UK Land Registry.');
                 }
             }
 
@@ -335,9 +337,10 @@
         });
     }
 
-    function getVolumeDatasets() {
+    function getVolumeDatasets(includePartial) {
+        const years = includePartial ? YEARS : COMPLETE_YEARS;
         return PROPERTY_TYPES.map(({ code, label, color }) => {
-            const data = YEARS.map(year => {
+            const data = years.map(year => {
                 const yearData = allYearData[year];
                 if (!yearData) return null;
 
@@ -353,7 +356,7 @@
                 return (yearData[code] && yearData[code].count) ? yearData[code].count : null;
             });
 
-            return {
+            const ds = {
                 label,
                 data,
                 borderColor: color,
@@ -364,6 +367,20 @@
                 tension: 0.3,
                 spanGaps: true
             };
+
+            // Dash the last segment when partial year is shown
+            if (includePartial && data.length > 1) {
+                const segmentDash = function (ctx) {
+                    return ctx.p1DataIndex === data.length - 1 ? [6, 3] : undefined;
+                };
+                ds.segment = { borderDash: segmentDash };
+                // Hollow point for the partial-year data point
+                ds.pointStyle = data.map((_, i) => i === data.length - 1 ? 'circle' : 'circle');
+                ds.pointBackgroundColor = data.map((_, i) => i === data.length - 1 ? '#fff' : color);
+                ds.pointBorderColor = color;
+            }
+
+            return ds;
         });
     }
 
@@ -493,15 +510,19 @@
         });
     }
 
+    let showPartialYear = false;
+
     function renderVolumeChart() {
         const ctx = document.getElementById('volume-chart').getContext('2d');
         if (volumeChart) volumeChart.destroy();
 
+        const years = showPartialYear ? YEARS : COMPLETE_YEARS;
+
         volumeChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: YEARS,
-                datasets: getVolumeDatasets()
+                labels: years,
+                datasets: getVolumeDatasets(showPartialYear)
             },
             options: {
                 responsive: true,
@@ -514,7 +535,8 @@
                             label: function (ctx) {
                                 const v = ctx.parsed.y;
                                 if (v === null || v === undefined) return ctx.dataset.label + ': No data';
-                                return ctx.dataset.label + ': ' + v.toLocaleString('en-GB') + ' sales';
+                                const suffix = (showPartialYear && ctx.dataIndex === years.length - 1) ? ' (YTD)' : '';
+                                return ctx.dataset.label + ': ' + v.toLocaleString('en-GB') + ' sales' + suffix;
                             }
                         }
                     }
@@ -572,6 +594,22 @@
 
         setupEmbedButtons();
 
+        // Partial year toggle for volume chart
+        const ytdToggle = document.getElementById('ytd-toggle');
+        if (ytdToggle) {
+            ytdToggle.addEventListener('change', function () {
+                showPartialYear = ytdToggle.checked;
+                renderVolumeChart();
+                // Re-apply hidden datasets
+                hiddenDatasets.forEach(function (idx) {
+                    if (volumeChart) {
+                        volumeChart.data.datasets[idx].hidden = true;
+                    }
+                });
+                if (volumeChart) volumeChart.update();
+            });
+        }
+
         // Download buttons
         document.getElementById('download-price').addEventListener('click', function () {
             downloadChart('price-chart', 'Average Price by Year', true, sectorCode + '-prices');
@@ -608,7 +646,7 @@
     function setEmbedFooter(chartKey) {
         const footer = document.getElementById('embed-footer-' + chartKey);
         if (!footer) return;
-        const modeLabel = (chartKey !== 'volume' && isReal) ? ' · Real (2025 \u00a3)' : '';
+        const modeLabel = (chartKey !== 'volume' && isReal) ? ' · Real (2026 \u00a3)' : '';
         footer.innerHTML =
             '<span>' + sectorCode + ' \u00b7 ' + CHART_LABELS[chartKey] + modeLabel + '</span>' +
             '<a href="' + window.location.origin + '/area/' + sectorCode + '" target="_blank">' +
@@ -727,7 +765,7 @@
 
         // Mode badge (price chart only)
         if (showMode) {
-            const modeLabel = isReal ? 'Real (2025 \u00a3)' : 'Nominal';
+            const modeLabel = isReal ? 'Real (2026 \u00a3)' : 'Nominal';
             ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
             const badgeW = ctx.measureText(modeLabel).width + 18;
             const badgeX = chartW - badgeW - 16;

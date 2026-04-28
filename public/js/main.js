@@ -13,10 +13,10 @@
 
     // Configuration
     const config = {
-        defaultYear: 2025,
+        defaultYear: 2026,
         defaultPropertyType: 'A',
         minYear: 1995,
-        maxYear: 2025
+        maxYear: 2026
     };
 
     // Major UK cities: bounding boxes for hash-based navigation (e.g. /#manchester)

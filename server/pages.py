@@ -169,13 +169,13 @@ def _inject_meta(html: str, code: str) -> tuple[str, bool]:
 
     if place:
         description = (
-            f"{place} ({code}) house prices from 1995 to 2025. "
+            f"{place} ({code}) house prices from 1995 to 2026. "
             f"Explore average and median prices, transaction volumes and "
             f"price trends for the {code} postcode district."
         )
     else:
         description = (
-            f"{code} house prices from 1995 to 2025. "
+            f"{code} house prices from 1995 to 2026. "
             f"Explore average and median prices, transaction volumes and "
             f"price trends for the {code} postcode district."
         )

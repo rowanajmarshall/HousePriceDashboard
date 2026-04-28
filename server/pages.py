@@ -50,6 +50,23 @@ async def embed_page():
 async def browse_page():
     return _static("browse")
 
+
+@router.get("/blog", response_class=HTMLResponse)
+async def blog_index():
+    return _static("blog")
+
+
+@router.get("/blog/{slug}", response_class=HTMLResponse)
+async def blog_post(slug: str):
+    path = ROOT / "public" / "blog" / f"{slug}.html"
+    if not path.exists():
+        raise HTTPException(status_code=404)
+    content = path.read_text()
+    return HTMLResponse(
+        content=content,
+        headers={"Cache-Control": "public, max-age=300, s-maxage=86400"},
+    )
+
 # Postcode area prefix → place name.
 # Two-letter prefixes are checked before single-letter ones.
 _AREA_NAMES: dict[str, str] = {
@@ -165,7 +182,7 @@ def _inject_meta(html: str, code: str) -> tuple[str, bool]:
     else:
         label = code
 
-    title = f"{label} House Prices | UK House Price Heatmap"
+    title = f"{label} House Prices | House Price Dashboard"
 
     if place:
         description = (

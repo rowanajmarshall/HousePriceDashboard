@@ -80,7 +80,7 @@
 
     function applyMetaTags(code, description) {
         const label = districtName ? districtName + ' - ' + code : code;
-        const title = label + ' House Prices | UK House Price Heatmap';
+        const title = label + ' House Prices | House Price Dashboard';
         const pageUrl = 'https://housepricedashboard.co.uk/area/' + code;
 
         document.title = title;
@@ -99,7 +99,7 @@
             '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
             'itemListElement': [
-                { '@type': 'ListItem', 'position': 1, 'name': 'UK House Price Heatmap', 'item': 'https://housepricedashboard.co.uk/' },
+                { '@type': 'ListItem', 'position': 1, 'name': 'House Price Dashboard', 'item': 'https://housepricedashboard.co.uk/' },
                 { '@type': 'ListItem', 'position': 2, 'name': label + ' House Prices', 'item': pageUrl }
             ]
         });

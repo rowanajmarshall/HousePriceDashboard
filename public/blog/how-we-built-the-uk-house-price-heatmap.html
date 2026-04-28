@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How We Built the House Price Dashboard - House Price Dashboard</title>
+
+    <meta name="description" content="A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive map, using DuckDB, FastAPI, and Leaflet.">
+    <link rel="canonical" href="https://housepricedashboard.co.uk/blog/how-we-built-the-uk-house-price-heatmap">
+
+    <meta property="og:title" content="How We Built the House Price Dashboard">
+    <meta property="og:description" content="A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive heatmap.">
+    <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How We Built the House Price Dashboard">
+    <meta name="twitter:description" content="A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive heatmap.">
+    <meta name="twitter:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+
+    <link rel="stylesheet" href="/css/main.css?v=25">
+    <link rel="stylesheet" href="/css/blog.css?v=1">
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <div class="header-content">
+                <div class="header-titles">
+                    <a href="/" class="header-link">
+                        <h1>House Price Dashboard</h1>
+                    </a>
+                    <p class="subtitle">Blog</p>
+                </div>
+                <nav class="header-nav">
+                    <a href="/" class="nav-link">Map</a>
+                    <a href="/blog" class="nav-link active">Blog</a>
+                    <a href="/contact.html" class="nav-link">Contact</a>
+                    <a href="/attribution.html" class="nav-link">Attributions</a>
+                </nav>
+            </div>
+        </header>
+
+        <main class="blog-main">
+            <article class="blog-post">
+                <a href="/blog" class="blog-back">&larr; All posts</a>
+                <time class="blog-date">15 April 2026</time>
+                <h2>How We Built the House Price Dashboard</h2>
+
+                <p>When we set out to visualise every residential property transaction in England and Wales, we knew we'd need a stack that could handle serious data volume without serious infrastructure costs. Here's how we did it.</p>
+
+                <h3>The data</h3>
+                <p>The UK Land Registry publishes a complete record of every property transaction since 1995 — around 30 million rows. The dataset includes the price paid, the date, postcode, property type, and whether it was a new build or existing property. It's published as a single CSV file that weighs in at several gigabytes.</p>
+
+                <h3>Why DuckDB?</h3>
+                <p>We needed something that could aggregate millions of rows quickly, run on a single server with no external database infrastructure, and ideally fit in a single file we could deploy alongside the application. DuckDB was the obvious choice. It handles analytical queries over our full dataset in milliseconds, and the entire database file is small enough to store in S3 and pull down on deploy.</p>
+
+                <h3>The API layer</h3>
+                <p>FastAPI serves both the data endpoints and the static frontend. When you load the map, it fetches pre-aggregated price statistics by postcode district and year. The aggregation happens at database build time, so API responses are fast and cacheable.</p>
+
+                <h3>The frontend</h3>
+                <p>The map itself is built with Leaflet, rendering GeoJSON boundaries for each postcode district. We colour each district on a gradient based on average price, with the scale adjusting dynamically as you change the year or property type filter. The whole thing is vanilla JavaScript — no frameworks, no build step.</p>
+
+                <h3>What's next</h3>
+                <p>We're working on inflation-adjusted comparisons, more granular postcode sector data, and an AI chat feature that lets you query the data in natural language. Stay tuned.</p>
+            </article>
+        </main>
+
+        <footer class="contact-footer">
+            <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry</a></p>
+        </footer>
+    </div>
+
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+</body>
+</html>

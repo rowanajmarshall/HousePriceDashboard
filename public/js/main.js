@@ -609,7 +609,7 @@
      * Initialize the application
      */
     async function init() {
-        console.log('Initializing UK House Price Heatmap...');
+        console.log('Initializing House Price Dashboard...');
 
         try {
             showLoading(true);

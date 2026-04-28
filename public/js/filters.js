@@ -12,7 +12,7 @@ const FiltersModule = (function() {
     // Change view filter state
     let changeState = {
         propertyType: 'A',
-        startYear: 2014,
+        startYear: 2020,
         endYear: new Date().getFullYear(),
         adjustmentMode: 'nominal' // 'nominal' or 'real'
     };
@@ -85,8 +85,8 @@ const FiltersModule = (function() {
 
         // Set initial change state
         changeState.propertyType = defaultPropertyType;
-        changeState.startYear = Math.max(minYear, maxYear - 10); // Default: 10 years ago
-        changeState.endYear = maxYear;
+        changeState.startYear = 2020;
+        changeState.endYear = defaultYear;
 
         // Initialize controls
         initPropertyTypeFilter();

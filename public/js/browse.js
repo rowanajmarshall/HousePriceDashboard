@@ -4,7 +4,7 @@
 (function () {
     const YEAR_MIN = 1995;
     const YEAR_MAX = 2026;
-    const DEFAULT_YEAR = 2026;
+    const DEFAULT_YEAR = 2025;
 
     const PROP_TYPES = [
         { code: 'A', label: 'All Types' },

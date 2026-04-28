@@ -13,7 +13,7 @@
 
     // Configuration
     const config = {
-        defaultYear: 2026,
+        defaultYear: 2025,
         defaultPropertyType: 'A',
         minYear: 1995,
         maxYear: 2026
@@ -76,7 +76,7 @@
             tab: params.get('tab') || 'price',
             year: parseInt(params.get('year')) || config.defaultYear,
             propertyType: params.get('type') || config.defaultPropertyType,
-            startYear: parseInt(params.get('start')) || 2014,
+            startYear: parseInt(params.get('start')) || 2020,
             endYear: parseInt(params.get('end')) || config.defaultYear,
             adjustmentMode: params.get('adj') || 'nominal'
         };

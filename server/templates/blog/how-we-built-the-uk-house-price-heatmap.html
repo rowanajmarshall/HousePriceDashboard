@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>How We Built the House Price Dashboard - House Price Dashboard</title>
+{% extends "base.html" %}
 
-    <meta name="description" content="A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive map, using DuckDB, FastAPI, and Leaflet.">
-    <link rel="canonical" href="https://housepricedashboard.co.uk/blog/how-we-built-the-uk-house-price-heatmap">
+{% block title %}How We Built the House Price Dashboard - House Price Dashboard{% endblock %}
+{% block meta_description %}<meta name="description" content="A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive map, using DuckDB, FastAPI, and Leaflet.">{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://housepricedashboard.co.uk/blog/how-we-built-the-uk-house-price-heatmap">{% endblock %}
 
+{% block og_tags %}
     <meta property="og:title" content="How We Built the House Price Dashboard">
     <meta property="og:description" content="A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive heatmap.">
     <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
@@ -16,29 +13,13 @@
     <meta name="twitter:title" content="How We Built the House Price Dashboard">
     <meta name="twitter:description" content="A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive heatmap.">
     <meta name="twitter:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
+{% endblock %}
 
-    <link rel="stylesheet" href="/css/main.css?v=25">
+{% block extra_css %}
     <link rel="stylesheet" href="/css/blog.css?v=1">
-</head>
-<body>
-    <div class="app-container">
-        <header class="header">
-            <div class="header-content">
-                <div class="header-titles">
-                    <a href="/" class="header-link">
-                        <h1>House Price Dashboard</h1>
-                    </a>
-                    <p class="subtitle">Blog</p>
-                </div>
-                <nav class="header-nav">
-                    <a href="/" class="nav-link">Map</a>
-                    <a href="/blog" class="nav-link active">Blog</a>
-                    <a href="/contact.html" class="nav-link">Contact</a>
-                    <a href="/attribution.html" class="nav-link">Attributions</a>
-                </nav>
-            </div>
-        </header>
+{% endblock %}
 
+{% block main %}
         <main class="blog-main">
             <article class="blog-post">
                 <a href="/blog" class="blog-back">&larr; All posts</a>
@@ -63,12 +44,4 @@
                 <p>We're working on inflation-adjusted comparisons, more granular postcode sector data, and an AI chat feature that lets you query the data in natural language. Stay tuned.</p>
             </article>
         </main>
-
-        <footer class="contact-footer">
-            <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry</a></p>
-        </footer>
-    </div>
-
-    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
-</body>
-</html>
+{% endblock %}

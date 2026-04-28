@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Blog - House Price Dashboard{% endblock %}
+{% block meta_description %}<meta name="description" content="Articles and insights about UK house prices, property market trends, and data analysis.">{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://housepricedashboard.co.uk/blog">{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="/css/blog.css?v=1">
+{% endblock %}
+
+{% block main %}
+        <!-- Main Content -->
+        <main class="blog-main">
+            <div class="blog-container">
+                <h2>Latest Posts</h2>
+
+                <div class="blog-list">
+                    <a href="/blog/how-we-built-the-uk-house-price-heatmap" class="blog-card">
+                        <div class="blog-card-content">
+                            <time class="blog-date">15 April 2026</time>
+                            <h3>How We Built the House Price Dashboard</h3>
+                            <p>A look behind the scenes at how we turned 30 million Land Registry transactions into an interactive map, using DuckDB, FastAPI, and Leaflet.</p>
+                        </div>
+                    </a>
+
+                    <a href="/blog/londons-price-gap-north-vs-south" class="blog-card">
+                        <div class="blog-card-content">
+                            <time class="blog-date">8 April 2026</time>
+                            <h3>London's Price Gap: North vs South of the Thames</h3>
+                            <p>We dig into the data to explore how house prices differ between north and south London, and whether the gap is closing.</p>
+                        </div>
+                    </a>
+
+                    <a href="/blog/the-stamp-duty-effect" class="blog-card">
+                        <div class="blog-card-content">
+                            <time class="blog-date">1 April 2026</time>
+                            <h3>The Stamp Duty Effect: What the Data Shows</h3>
+                            <p>Every time stamp duty thresholds change, transaction volumes spike and crash. Here's what 30 years of data reveals about buyer behaviour around policy shifts.</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </main>
+{% endblock %}

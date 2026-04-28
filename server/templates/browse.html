@@ -1,27 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse Postcode Districts | House Price Dashboard</title>
+{% extends "base.html" %}
 
-    <!-- SEO -->
-    <meta name="description" content="Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes from 1995 to 2026.">
-    <link rel="canonical" href="https://housepricedashboard.co.uk/browse">
+{% block title %}Browse Postcode Districts | House Price Dashboard{% endblock %}
+{% block meta_description %}<meta name="description" content="Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes from 1995 to 2026.">{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://housepricedashboard.co.uk/browse">{% endblock %}
 
-    <!-- Social Media Preview -->
-    <meta property="og:title" content="Browse Postcode Districts | House Price Dashboard">
-    <meta property="og:description" content="Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes.">
-    <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Browse Postcode Districts | House Price Dashboard">
-    <meta name="twitter:description" content="Browse and compare house prices for every UK postcode district.">
-    <meta name="twitter:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
-
-    <!-- Application CSS -->
-    <link rel="stylesheet" href="css/main.css?v=20">
-
+{% block extra_css %}
     <style>
         .browse-main {
             flex: 1;
@@ -175,18 +158,18 @@
 
         /* Sort arrows via pseudo-element */
         .sort-th::after {
-            content: ' ↕';
+            content: ' \2195';
             opacity: 0.4;
             font-size: 10px;
         }
 
         .sort-th.sort-desc::after {
-            content: ' ↓';
+            content: ' \2193';
             opacity: 1;
         }
 
         .sort-th.sort-asc::after {
-            content: ' ↑';
+            content: ' \2191';
             opacity: 1;
         }
 
@@ -272,37 +255,9 @@
             }
         }
     </style>
-</head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="header-titles">
-                    <a href="/" class="header-link">
-                        <h1>House Price Dashboard</h1>
-                    </a>
-                    <p class="subtitle">Postcode district league table</p>
-                </div>
-                <nav class="header-nav">
-                    <a href="/" class="nav-link">Map</a>
-                    <!-- <a href="/blog" class="nav-link">Blog</a> -->
-                    <a href="/contact.html" class="nav-link">Contact</a>
-                    <a href="/attribution.html" class="nav-link">Attributions</a>
-                    <button id="share-btn" class="share-btn" aria-label="Copy link to current view">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="18" cy="5" r="3"></circle>
-                            <circle cx="6" cy="12" r="3"></circle>
-                            <circle cx="18" cy="19" r="3"></circle>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                        </svg>
-                        Share
-                    </button>
-                </nav>
-            </div>
-        </header>
+{% endblock %}
 
+{% block main %}
         <!-- Main Content -->
         <main class="browse-main">
             <div class="browse-container">
@@ -333,12 +288,12 @@
                 </div>
 
                 <!-- Summary -->
-                <p class="browse-summary" id="browse-summary">Loading…</p>
+                <p class="browse-summary" id="browse-summary">Loading&hellip;</p>
 
                 <!-- Loading state -->
                 <div class="browse-loading" id="browse-loading">
                     <div class="loading-spinner"></div>
-                    <p>Loading district data…</p>
+                    <p>Loading district data&hellip;</p>
                 </div>
 
                 <!-- Table (shown after load) -->
@@ -368,11 +323,14 @@
 
             </div>
         </main>
-    </div>
+{% endblock %}
 
+{% block footer %}{% endblock %}
+
+{% block scripts %}
     <!-- Application JS -->
-    <script src="js/data-loader.js?v=20"></script>
-    <script src="js/browse.js?v=1"></script>
+    <script src="/js/data-loader.js?v=20"></script>
+    <script src="/js/browse.js?v=1"></script>
 
     <!-- Populate year dropdown before browse.js init -->
     <script>
@@ -386,32 +344,4 @@
             }
         })();
     </script>
-
-    <script>
-        (function() {
-            var btn = document.getElementById('share-btn');
-            if (!btn) return;
-            btn.addEventListener('click', function() {
-                var url = window.location.href;
-                var orig = btn.innerHTML;
-                function done() {
-                    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!';
-                    btn.classList.add('copied');
-                    setTimeout(function() { btn.innerHTML = orig; btn.classList.remove('copied'); }, 2000);
-                }
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(url).then(done, function() { fallback(url); done(); });
-                } else { fallback(url); done(); }
-                function fallback(u) {
-                    var t = document.createElement('textarea');
-                    t.value = u; t.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
-                    document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
-                }
-            });
-        })();
-    </script>
-
-    <!-- 100% privacy-first analytics -->
-    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
-</body>
-</html>
+{% endblock %}

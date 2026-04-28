@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>House Price Dashboard</title>
-    <meta name="description" content="Interactive UK house price heatmap with 30 years of data. Search any postcode to explore average prices, trends and transaction volumes from 1995 to 2026.">
-    <link rel="canonical" href="https://housepricedashboard.co.uk/">
+{% extends "base.html" %}
 
+{% block title %}House Price Dashboard{% endblock %}
+{% block meta_description %}<meta name="description" content="Interactive UK house price heatmap with 30 years of data. Search any postcode to explore average prices, trends and transaction volumes from 1995 to 2026.">{% endblock %}
+{% block canonical %}<link rel="canonical" href="https://housepricedashboard.co.uk/">{% endblock %}
+
+{% block structured_data %}
     <!-- Structured data -->
     <script type="application/ld+json">
     {
@@ -25,75 +23,17 @@
         }
     }
     </script>
+{% endblock %}
 
-    <!-- Social Media Preview -->
-    <meta property="og:title" content="House Price Dashboard">
-    <meta property="og:description" content="Explore 30+ years of property prices across England & Wales">
-    <meta property="og:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="House Price Dashboard">
-    <meta name="twitter:description" content="Explore 30+ years of property prices across England & Wales">
-    <meta name="twitter:image" content="https://housepricedashboard.co.uk/social_media_preview.png">
-
+{% block extra_css %}
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
           crossorigin="">
+    <link rel="stylesheet" href="/css/map.css?v=20">
+{% endblock %}
 
-    <!-- Application CSS -->
-    <link rel="stylesheet" href="css/main.css?v=25">
-    <link rel="stylesheet" href="css/map.css?v=20">
-
-    <!-- PostHog -->
-    <script>
-        !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+" (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId setPersonPropertiesForFlags".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-        posthog.init('phc_xzTX3FM9ajJZAwisZPM7zZWwDt6dC5p2V6zz9odn6m85', {
-            api_host: 'https://eu.i.posthog.com',
-            person_profiles: 'identified_only',
-        });
-    </script>
-</head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="header-titles">
-                    <a href="/" class="header-link" onclick="window.location.replace(window.location.origin + window.location.pathname); return false;"><h1>House Price Dashboard</h1></a>
-                    <p class="subtitle">Explore 30+ years of property prices across England & Wales</p>
-                </div>
-                <div class="search-container">
-                    <div class="search-box">
-                        <input type="text" id="postcode-search" placeholder="Search area, city or postcode..." aria-label="Search postcode" autocomplete="off">
-                        <button id="search-btn" type="button" aria-label="Search">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <path d="M21 21l-4.35-4.35"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    <ul id="search-autocomplete" class="search-autocomplete" role="listbox" aria-label="Search suggestions"></ul>
-                </div>
-                <nav class="header-nav">
-                    <a href="/" class="nav-link active">Map</a>
-                    <!-- <a href="/blog" class="nav-link">Blog</a> -->
-                    <a href="/contact.html" class="nav-link">Contact</a>
-                    <a href="/attribution.html" class="nav-link">Attributions</a>
-                    <button id="share-btn" class="share-btn" aria-label="Copy link to current view">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="18" cy="5" r="3"></circle>
-                            <circle cx="6" cy="12" r="3"></circle>
-                            <circle cx="18" cy="19" r="3"></circle>
-                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                        </svg>
-                        Share
-                    </button>
-                </nav>
-            </div>
-        </header>
-
+{% block main %}
         <!-- Main Content -->
         <main class="main-content">
             <!-- Controls Panel -->
@@ -208,7 +148,7 @@
                 <!-- Mobile collapse handle (hidden on desktop) -->
                 <div class="mobile-controls-handle">
                     <button class="collapse-toggle" aria-expanded="true">
-                        <span class="collapse-icon">▲</span>
+                        <span class="collapse-icon">&#9650;</span>
                         <span class="handle-label">Hide Filters</span>
                         <span class="controls-summary"></span>
                     </button>
@@ -238,8 +178,9 @@
                 </div>
             </div>
         </main>
-    </div>
+{% endblock %}
 
+{% block outside_container %}
     <!-- Tooltip Template (hidden, cloned for use) -->
     <div id="tooltip-template" class="tooltip" style="display: none;">
         <div class="tooltip-header">
@@ -286,7 +227,7 @@
             </a>
         </div>
         <div class="tooltip-footer">
-            <a href="https://buymeacoffee.com/rowanajmarshall" target="_blank" rel="noopener">Find this useful? Buy me a coffee ☕</a>
+            <a href="https://buymeacoffee.com/rowanajmarshall" target="_blank" rel="noopener">Find this useful? Buy me a coffee &#9749;</a>
         </div>
     </div>
 
@@ -303,7 +244,7 @@
                     <textarea id="embed-code" class="embed-code" readonly rows="5" spellcheck="false"></textarea>
                     <button id="copy-embed-btn" class="copy-embed-btn">Copy code</button>
                 </div>
-                <p class="modal-hint">Recommended size: 800 × 500px. Resize freely — it adapts.</p>
+                <p class="modal-hint">Recommended size: 800 &times; 500px. Resize freely &mdash; it adapts.</p>
             </div>
         </div>
     </div>
@@ -315,21 +256,22 @@
         <button id="compare-tray-go" class="compare-tray-go" disabled>Compare &#8594;</button>
         <button id="compare-tray-clear" class="compare-tray-clear">Clear</button>
     </div>
+{% endblock %}
 
+{% block footer %}{% endblock %}
+
+{% block scripts %}
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
             integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
             crossorigin=""></script>
 
     <!-- Application JS -->
-    <script src="js/data-loader.js?v=19"></script>
-    <script src="js/map.js?v=19"></script>
-    <script src="js/heatmap.js?v=19"></script>
-    <script src="js/filters.js?v=19"></script>
-    <script src="js/tabs.js?v=19"></script>
-    <script src="js/tooltip.js?v=22"></script>
-    <script src="js/main.js?v=22"></script>
-    <!-- 100% privacy-first analytics -->
-<script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
-</body>
-</html>
+    <script src="/js/data-loader.js?v=19"></script>
+    <script src="/js/map.js?v=19"></script>
+    <script src="/js/heatmap.js?v=19"></script>
+    <script src="/js/filters.js?v=19"></script>
+    <script src="/js/tabs.js?v=19"></script>
+    <script src="/js/tooltip.js?v=22"></script>
+    <script src="/js/main.js?v=22"></script>
+{% endblock %}

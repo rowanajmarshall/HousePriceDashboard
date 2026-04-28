@@ -1,71 +1,115 @@
 """
-Server-side rendering for pages that need dynamic meta tags.
+Server-side rendering for all HTML pages using Jinja2 templates.
 
-GET /area/{code} — injects SEO meta tags for postcode district pages,
-replicating what the Cloudflare Worker previously did via HTMLRewriter.
+Templates live in server/templates/ and extend base.html for shared
+header, nav, share button, footer, and analytics.
 """
 
 import json
 import re
-from functools import lru_cache
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from .cache import register_cache
-from .database import execute_raw
 from .data import _load_district
+from .database import execute_raw
+from .templating import templates
 
 _POSTCODE_RE = re.compile(r"^[A-Z]{1,2}\d{1,2}[A-Z]?$")
 
 router = APIRouter()
 
 ROOT = Path(__file__).parent.parent
-_AREA_PAGE = ROOT / "public" / "area-page.html"
 
 
-@lru_cache(maxsize=None)
-def _static(name: str) -> HTMLResponse:
-    content = (ROOT / "public" / f"{name}.html").read_text()
-    return HTMLResponse(
-        content=content,
-        headers={"Cache-Control": "public, max-age=300, s-maxage=86400"},
-    )
+# ── Static page routes ──────────────────────────────────────────────────────
 
-register_cache(_static)
+@router.get("/", response_class=HTMLResponse)
+async def index_page(request: Request):
+    return templates.TemplateResponse(request, "index.html", {
+        "active_nav": "map",
+        "subtitle": "Explore 30+ years of property prices across England & Wales",
+        "show_search": True,
+        "posthog": True,
+        "og_title": "House Price Dashboard",
+        "og_description": "Explore 30+ years of property prices across England & Wales",
+    })
+
+
+@router.get("/contact.html", response_class=HTMLResponse)
+async def contact_page(request: Request):
+    return templates.TemplateResponse(request, "contact.html", {
+        "active_nav": "contact",
+        "subtitle": "Get in touch",
+        "og_title": "Contact - House Price Dashboard",
+        "og_description": "Get in touch with House Price Dashboard",
+    })
+
+
+@router.get("/attribution.html", response_class=HTMLResponse)
+async def attribution_page(request: Request):
+    return templates.TemplateResponse(request, "attribution.html", {
+        "active_nav": "attributions",
+        "subtitle": "Data Attribution & Licenses",
+        "og_title": "Attribution - House Price Dashboard",
+        "og_description": "Data sources and licenses for House Price Dashboard",
+    })
 
 
 @router.get("/compare", response_class=HTMLResponse)
-async def compare_page():
-    return _static("compare")
+async def compare_page(request: Request):
+    return templates.TemplateResponse(request, "compare.html", {
+        "subtitle": "Area price comparison",
+        "posthog": True,
+        "og_title": "Compare Areas | House Price Dashboard",
+        "og_description": "Compare house price history across multiple UK postcode districts.",
+    }, headers={"Cache-Control": "public, max-age=300, s-maxage=86400"})
 
 
 @router.get("/embed", response_class=HTMLResponse)
 async def embed_page():
-    return _static("embed")
-
-
-@router.get("/browse", response_class=HTMLResponse)
-async def browse_page():
-    return _static("browse")
-
-
-@router.get("/blog", response_class=HTMLResponse)
-async def blog_index():
-    return _static("blog")
-
-
-@router.get("/blog/{slug}", response_class=HTMLResponse)
-async def blog_post(slug: str):
-    path = ROOT / "public" / "blog" / f"{slug}.html"
-    if not path.exists():
-        raise HTTPException(status_code=404)
-    content = path.read_text()
+    content = (ROOT / "public" / "embed.html").read_text()
     return HTMLResponse(
         content=content,
         headers={"Cache-Control": "public, max-age=300, s-maxage=86400"},
     )
+
+
+@router.get("/browse", response_class=HTMLResponse)
+async def browse_page(request: Request):
+    return templates.TemplateResponse(request, "browse.html", {
+        "subtitle": "Postcode district league table",
+        "og_title": "Browse Postcode Districts | House Price Dashboard",
+        "og_description": "Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes.",
+    }, headers={"Cache-Control": "public, max-age=300, s-maxage=86400"})
+
+
+@router.get("/blog", response_class=HTMLResponse)
+async def blog_index(request: Request):
+    return templates.TemplateResponse(request, "blog.html", {
+        "active_nav": "blog",
+        "subtitle": "Blog",
+        "og_title": "Blog - House Price Dashboard",
+        "og_description": "Articles and insights about UK house prices, property market trends, and data analysis.",
+    }, headers={"Cache-Control": "public, max-age=300, s-maxage=86400"})
+
+
+@router.get("/blog/{slug}", response_class=HTMLResponse)
+async def blog_post(request: Request, slug: str):
+    template_path = f"blog/{slug}.html"
+    try:
+        templates.get_template(template_path)
+    except Exception:
+        raise HTTPException(status_code=404)
+    return templates.TemplateResponse(request, template_path, {
+        "active_nav": "blog",
+        "subtitle": "Blog",
+        "og_type": "article",
+    }, headers={"Cache-Control": "public, max-age=300, s-maxage=86400"})
+
+
+# ── Postcode area helpers ────────────────────────────────────────────────────
 
 # Postcode area prefix → place name.
 # Two-letter prefixes are checked before single-letter ones.
@@ -119,13 +163,6 @@ def _area_name(code: str) -> str | None:
     return _AREA_NAMES.get(code[:2]) or _AREA_NAMES.get(code[:1]) or None
 
 
-@lru_cache(maxsize=None)
-def _html_template() -> str:
-    return _AREA_PAGE.read_text()
-
-register_cache(_html_template)
-
-
 def _district_name(code: str) -> str | None:
     rows, _ = execute_raw("SELECT name FROM district_names WHERE district = ?", [code])
     return rows[0][0] if rows else None
@@ -164,12 +201,14 @@ def _ssr_summary(code: str, place: str | None) -> str | None:
     return ", ".join(parts) + "."
 
 
-def _inject_meta(html: str, code: str) -> tuple[str, bool]:
-    """Inject SEO meta tags and SSR content.
+# ── Area page (SSR) ─────────────────────────────────────────────────────────
 
-    Returns (html, has_data). has_data is False when the district has no
-    transactions — the caller should 404 in that case.
-    """
+@router.get("/area/{code}", response_class=HTMLResponse)
+async def area_page(request: Request, code: str):
+    code = code.upper()
+    if not _POSTCODE_RE.match(code):
+        raise HTTPException(status_code=404)
+
     specific = _district_name(code)
     area = _area_name(code)
     place = specific or area
@@ -197,74 +236,21 @@ def _inject_meta(html: str, code: str) -> tuple[str, bool]:
             f"price trends for the {code} postcode district."
         )
 
+    summary = _ssr_summary(code, place)
+    if summary is None:
+        raise HTTPException(status_code=404)
+
     canonical = f"https://housepricedashboard.co.uk/area/{code}"
 
-    html = re.sub(r"<title>[^<]*</title>", f"<title>{title}</title>", html)
-    html = re.sub(
-        r'(<meta\s+name="description"\s+content=")[^"]*(")',
-        rf'\g<1>{description}\2',
-        html,
-    )
-    html = re.sub(
-        r'(<meta\s+property="og:title"\s+content=")[^"]*(")',
-        rf'\g<1>{title}\2',
-        html,
-    )
-    html = re.sub(
-        r'(<meta\s+property="og:description"\s+content=")[^"]*(")',
-        rf'\g<1>{description}\2',
-        html,
-    )
-    html = re.sub(
-        r'(<meta\s+name="twitter:title"\s+content=")[^"]*(")',
-        rf'\g<1>{title}\2',
-        html,
-    )
-    html = re.sub(
-        r'(<meta\s+name="twitter:description"\s+content=")[^"]*(")',
-        rf'\g<1>{description}\2',
-        html,
-    )
-    html = html.replace(
-        '<base href="/">',
-        f'<base href="/">\n    <link rel="canonical" href="{canonical}">',
-        1,
-    )
-    html = re.sub(
-        r'(<meta\s+name="robots"\s+content=")[^"]*(")',
-        r'\g<1>index, follow\2',
-        html,
-    )
-
-    # SSR: pre-populate visible content so crawlers see real data without JS.
-    summary = _ssr_summary(code, place)
-    if summary:
-        html = html.replace(
-            '<p class="area-summary" id="area-summary"></p>',
-            f'<p class="area-summary" id="area-summary">{summary}</p>',
-        )
-        # Show content immediately; JS will update it once data loads.
-        html = html.replace(
-            '<div id="area-content" style="display: none;">',
-            '<div id="area-content">',
-        )
-        html = html.replace(
-            '<div class="area-loading" id="area-loading">',
-            '<div class="area-loading" id="area-loading" style="display: none;">',
-        )
-
-    return html, summary is not None
-
-
-@router.get("/area/{code}", response_class=HTMLResponse)
-async def area_page(code: str):
-    code = code.upper()
-    if not _POSTCODE_RE.match(code):
-        raise HTTPException(status_code=404)
-    html, has_data = _inject_meta(_html_template(), code)
-    if not has_data:
-        raise HTTPException(status_code=404)
-    return HTMLResponse(
-        content=html,
-        headers={"Cache-Control": "public, max-age=3600, s-maxage=86400"},
-    )
+    return templates.TemplateResponse(request, "area-page.html", {
+        "title": title,
+        "description": description,
+        "canonical": canonical,
+        "og_title": title,
+        "og_description": description,
+        "robots": "index, follow",
+        "summary": summary,
+        "has_data": True,
+        "subtitle": "Postcode area price history",
+        "posthog": True,
+    }, headers={"Cache-Control": "public, max-age=3600, s-maxage=86400"})

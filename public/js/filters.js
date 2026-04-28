@@ -161,14 +161,11 @@ const FiltersModule = (function() {
 
         // Add input listener (fires continuously while dragging)
         slider.addEventListener('input', function() {
-            display.textContent = this.value;
-            updateSliderFill(this);
-            if (disclaimer) disclaimer.style.visibility = parseInt(this.value, 10) >= maxYear ? 'visible' : 'hidden';
-        });
-
-        // Add change listener (fires when released)
-        slider.addEventListener('change', function() {
             const newYear = parseInt(this.value, 10);
+            display.textContent = newYear;
+            updateSliderFill(this);
+            if (disclaimer) disclaimer.style.visibility = newYear >= maxYear ? 'visible' : 'hidden';
+
             const oldYear = state.year;
             state.year = newYear;
 

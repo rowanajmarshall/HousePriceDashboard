@@ -737,9 +737,6 @@
         console.log('Filter changed:', event);
 
         try {
-            // Disable filters during update
-            FiltersModule.disable();
-
             // Show loading state
             showLoading(true, 'Updating map...');
 
@@ -749,8 +746,6 @@
             // Refresh tooltip with new data (keeps selection)
             TooltipModule.refresh();
 
-            // Re-enable filters
-            FiltersModule.enable();
             showLoading(false);
 
             // Update mobile summary
@@ -767,7 +762,6 @@
 
         } catch (error) {
             console.error('Failed to update heatmap:', error);
-            FiltersModule.enable();
             showLoading(false);
         }
     }

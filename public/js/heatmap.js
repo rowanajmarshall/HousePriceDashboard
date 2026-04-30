@@ -292,11 +292,16 @@ const HeatmapModule = (function() {
 
         viewMode = 'change';
 
-        // Load both years' data
-        await Promise.all([
+        const loadTasks = [
             DataLoader.loadPriceData(startYear),
             DataLoader.loadPriceData(endYear)
-        ]);
+        ];
+
+        if (adjustInflation) {
+            loadTasks.push(DataLoader.loadInflation());
+        }
+
+        await Promise.all(loadTasks);
 
         currentStartYear = startYear;
         currentEndYear = endYear;

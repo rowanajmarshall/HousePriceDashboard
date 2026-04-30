@@ -29,6 +29,28 @@ const DataLoader = (function() {
      * @returns {Promise<any>} Parsed JSON
      */
     async function getCachedOrFetch(path) {
+        const isApiResource = path.startsWith('/api/');
+
+        if (isApiResource) {
+            try {
+                const response = await fetch(path, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                if ('caches' in window) {
+                    try {
+                        const storage = await caches.open(CACHE_NAME);
+                        storage.put(path, response.clone()); // fire-and-forget
+                    } catch (err) {
+                        // Cache write failed — that's OK, we still have the response
+                    }
+                }
+
+                return response.json();
+            } catch (err) {
+                // Fall back to persisted API data only if the network request fails.
+            }
+        }
+
         if ('caches' in window) {
             try {
                 const storage = await caches.open(CACHE_NAME);

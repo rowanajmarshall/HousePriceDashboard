@@ -25,6 +25,28 @@ from .data import router as data_router
 from .pages import router as pages_router
 from .updater import check_and_update
 
+def _configure_logging() -> None:
+    from uvicorn.logging import DefaultFormatter
+
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        DefaultFormatter(
+            fmt="%(asctime)s %(levelprefix)s %(name)s: %(message)s",
+            use_colors=True,
+        )
+    )
+    root = logging.getLogger()
+    root.handlers.clear()
+    root.addHandler(handler)
+    root.setLevel(logging.INFO)
+
+    for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        lg = logging.getLogger(name)
+        lg.handlers.clear()
+        lg.propagate = True
+
+
+_configure_logging()
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parent.parent
@@ -45,12 +67,11 @@ async def lifespan(app: FastAPI):
 
 
 async def _startup_update_check():
-    print("Starting startup DuckDB update check", flush=True)
+    logger.info("Starting startup DuckDB update check")
     try:
         result = await check_and_update()
-        print(f"Startup DuckDB update check result: {result}", flush=True)
+        logger.info("Startup DuckDB update check result: %s", result)
     except Exception:
-        print("Startup DuckDB update check failed", flush=True)
         logger.exception("Startup update check failed")
 
 

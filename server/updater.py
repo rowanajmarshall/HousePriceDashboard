@@ -49,16 +49,17 @@ def _make_s3_client():
 def _download_from_s3(dest: Path) -> None:
     """Download the latest DB from S3. Blocking I/O."""
     s3 = _make_s3_client()
-    print(
-        f"Downloading new DuckDB file from s3://{config.S3_BUCKET}/"
-        f"{config.S3_LATEST_KEY} to {dest.name}",
-        flush=True,
+    logger.info(
+        "Downloading new DuckDB file from s3://%s/%s to %s",
+        config.S3_BUCKET,
+        config.S3_LATEST_KEY,
+        dest.name,
     )
     tmp = dest.with_suffix(".tmp")
     try:
         s3.download_file(config.S3_BUCKET, config.S3_LATEST_KEY, str(tmp))
         tmp.rename(dest)
-        print(f"Finished downloading DuckDB file: {dest.name}", flush=True)
+        logger.info("Finished downloading DuckDB file: %s", dest.name)
     except Exception:
         if tmp.exists():
             tmp.unlink()
@@ -70,10 +71,9 @@ async def check_and_update() -> dict:
 
     Returns a status dict for logging/admin visibility.
     """
-    print("Entered check_and_update()", flush=True)
+    logger.info("Entered check_and_update()")
     if not config.S3_BUCKET:
-        print("Skipping DuckDB update check: S3_BUCKET not configured", flush=True)
-        logger.debug("S3 not configured, skipping update check")
+        logger.info("Skipping DuckDB update check: S3_BUCKET not configured")
         return {"status": "skipped", "reason": "S3_BUCKET not configured"}
 
     try:
@@ -82,12 +82,10 @@ async def check_and_update() -> dict:
             s3.head_object, Bucket=config.S3_BUCKET, Key=config.S3_LATEST_KEY
         )
     except NoCredentialsError:
-        print("DuckDB update check failed: AWS credentials not configured", flush=True)
-        logger.error("AWS credentials not configured")
+        logger.error("DuckDB update check failed: AWS credentials not configured")
         return {"status": "error", "reason": "no credentials"}
     except ClientError as e:
-        print(f"DuckDB update check failed during head_object: {e}", flush=True)
-        logger.error("S3 head_object failed: %s", e)
+        logger.error("DuckDB update check failed during head_object: %s", e)
         return {"status": "error", "reason": str(e)}
 
     # Get remote date from S3 object metadata, fallback to LastModified
@@ -98,34 +96,32 @@ async def check_and_update() -> dict:
         remote_date = head["LastModified"].date()
 
     current = _current_date()
-    print(
-        "Current DuckDB file: "
-        f"{db.current_path.name if db.current_path else '<none>'} "
-        f"(date={current.isoformat() if current else 'unknown'}); "
-        f"remote DuckDB timestamp: {remote_date.isoformat()}",
-        flush=True,
+    logger.info(
+        "Current DuckDB file: %s (date=%s); remote DuckDB timestamp: %s",
+        db.current_path.name if db.current_path else "<none>",
+        current.isoformat() if current else "unknown",
+        remote_date.isoformat(),
     )
     if current and remote_date <= current:
-        print(
-            f"No DuckDB update needed: current={current.isoformat()} remote={remote_date.isoformat()}",
-            flush=True,
+        logger.info(
+            "No DuckDB update needed: current=%s remote=%s",
+            current.isoformat(),
+            remote_date.isoformat(),
         )
-        logger.debug("No update needed (current=%s, remote=%s)", current, remote_date)
         return {"status": "up_to_date", "current": str(current), "remote": str(remote_date)}
 
     dest = config.DATA_DIR / f"{remote_date.isoformat()}.duckdb"
 
     if dest.exists():
-        print(
-            "Remote DuckDB timestamp "
-            f"{remote_date.isoformat()} already exists locally as {dest.name}; "
-            "swapping without download",
-            flush=True,
+        logger.info(
+            "Remote DuckDB timestamp %s already exists locally as %s; swapping without download",
+            remote_date.isoformat(),
+            dest.name,
         )
     else:
-        print(
-            f"Remote DuckDB timestamp {remote_date.isoformat()} requires a new download",
-            flush=True,
+        logger.info(
+            "Remote DuckDB timestamp %s requires a new download",
+            remote_date.isoformat(),
         )
         await asyncio.to_thread(_download_from_s3, dest)
 

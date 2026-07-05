@@ -11,12 +11,15 @@
         loading: true
     };
 
+    // Latest year with data — injected by the server, clock year as fallback
+    const DATA_MAX_YEAR = window.DATA_MAX_YEAR || new Date().getFullYear();
+
     // Configuration
     const config = {
-        defaultYear: 2025,
+        defaultYear: DATA_MAX_YEAR - 1, // last complete year
         defaultPropertyType: 'A',
         minYear: 1995,
-        maxYear: 2026
+        maxYear: DATA_MAX_YEAR
     };
 
     // Major UK cities: bounding boxes for hash-based navigation (e.g. /#manchester)

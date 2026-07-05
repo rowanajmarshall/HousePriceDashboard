@@ -1,7 +1,8 @@
 (function () {
     const START_YEAR = 1995;
-    const END_YEAR = 2026;
-    const PARTIAL_YEAR = 2026; // current year with incomplete data
+    // Latest year with data — injected by the server, clock year as fallback
+    const END_YEAR = window.DATA_MAX_YEAR || new Date().getFullYear();
+    const PARTIAL_YEAR = END_YEAR; // latest year has incomplete data
     const YEARS = [];
     for (let y = START_YEAR; y <= END_YEAR; y++) YEARS.push(y);
     const COMPLETE_YEARS = YEARS.filter(y => y < PARTIAL_YEAR);
@@ -161,7 +162,7 @@
 
         // Set initial meta tags with template description (updated with real data after load)
         if (!isEmbed) {
-            applyMetaTags(sectorCode, 'House price history for the ' + sectorCode + ' postcode district \u2014 explore average and median prices from 1995 to 2026 for detached, semi-detached, terraced and flat properties.');
+            applyMetaTags(sectorCode, 'House price history for the ' + sectorCode + ' postcode district \u2014 explore average and median prices from 1995 to ' + END_YEAR + ' for detached, semi-detached, terraced and flat properties.');
         }
 
         // Apply embed mode
@@ -230,7 +231,7 @@
                 if (latest) {
                     const priceStr = '\u00a3' + latest.price.toLocaleString('en-GB');
                     const locationStr = districtName ? districtName + ' (' + sectorCode + ')' : sectorCode;
-                    applyMetaTags(sectorCode, locationStr + ' house prices: average ' + priceStr + ' (' + latest.year + '). Explore 30 years of property price history (1995\u20132026) including detached, semi-detached, terraced and flat homes. Data from UK Land Registry.');
+                    applyMetaTags(sectorCode, locationStr + ' house prices: average ' + priceStr + ' (' + latest.year + '). Explore 30 years of property price history (1995\u2013' + END_YEAR + ') including detached, semi-detached, terraced and flat homes. Data from UK Land Registry.');
                 }
             }
 
@@ -646,7 +647,7 @@
     function setEmbedFooter(chartKey) {
         const footer = document.getElementById('embed-footer-' + chartKey);
         if (!footer) return;
-        const modeLabel = (chartKey !== 'volume' && isReal) ? ' · Real (2026 \u00a3)' : '';
+        const modeLabel = (chartKey !== 'volume' && isReal) ? ' · Real (' + END_YEAR + ' \u00a3)' : '';
         footer.innerHTML =
             '<span>' + sectorCode + ' \u00b7 ' + CHART_LABELS[chartKey] + modeLabel + '</span>' +
             '<a href="' + window.location.origin + '/area/' + sectorCode + '" target="_blank">' +
@@ -765,7 +766,7 @@
 
         // Mode badge (price chart only)
         if (showMode) {
-            const modeLabel = isReal ? 'Real (2026 \u00a3)' : 'Nominal';
+            const modeLabel = isReal ? 'Real (' + END_YEAR + ' \u00a3)' : 'Nominal';
             ctx.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
             const badgeW = ctx.measureText(modeLabel).width + 18;
             const badgeX = chartW - badgeW - 16;

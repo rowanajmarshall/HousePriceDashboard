@@ -2,7 +2,8 @@
     'use strict';
 
     const START_YEAR = 1995;
-    const END_YEAR = 2026;
+    // Latest year with data — injected by the server, clock year as fallback
+    const END_YEAR = window.DATA_MAX_YEAR || new Date().getFullYear();
     const YEARS = [];
     for (let y = START_YEAR; y <= END_YEAR; y++) YEARS.push(y);
 

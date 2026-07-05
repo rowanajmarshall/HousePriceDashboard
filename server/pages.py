@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from .data import _load_district
+from .data import _load_district, data_max_year
 from .database import execute_raw
 from .templating import templates
 
@@ -204,7 +204,8 @@ def _ssr_summary(code: str, place: str | None) -> str | None:
 # ── Area page (SSR) ─────────────────────────────────────────────────────────
 
 @router.get("/area/{code}", response_class=HTMLResponse)
-async def area_page(request: Request, code: str):
+def area_page(request: Request, code: str):
+    # Sync endpoint: runs in the threadpool so DB queries don't block the event loop
     code = code.upper()
     if not _POSTCODE_RE.match(code):
         raise HTTPException(status_code=404)
@@ -223,18 +224,13 @@ async def area_page(request: Request, code: str):
 
     title = f"{label} House Prices | House Price Dashboard"
 
-    if place:
-        description = (
-            f"{place} ({code}) house prices from 1995 to 2026. "
-            f"Explore average and median prices, transaction volumes and "
-            f"price trends for the {code} postcode district."
-        )
-    else:
-        description = (
-            f"{code} house prices from 1995 to 2026. "
-            f"Explore average and median prices, transaction volumes and "
-            f"price trends for the {code} postcode district."
-        )
+    max_year = data_max_year()
+    subject = f"{place} ({code})" if place else code
+    description = (
+        f"{subject} house prices from 1995 to {max_year}. "
+        f"Explore average and median prices, transaction volumes and "
+        f"price trends for the {code} postcode district."
+    )
 
     summary = _ssr_summary(code, place)
     if summary is None:

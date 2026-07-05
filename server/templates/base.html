@@ -13,6 +13,9 @@
 
     {% block structured_data %}{% endblock %}
 
+    <!-- Latest year with Land Registry data, injected server-side -->
+    <script>window.DATA_MAX_YEAR = {{ data_max_year }};</script>
+
     <!-- Social Media Preview -->
     {% block og_tags %}
     <meta property="og:title" content="{{ og_title | default('House Price Dashboard') }}">

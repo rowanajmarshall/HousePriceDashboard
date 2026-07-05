@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}Browse Postcode Districts | House Price Dashboard{% endblock %}
-{% block meta_description %}<meta name="description" content="Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes from 1995 to 2026.">{% endblock %}
+{% block meta_description %}<meta name="description" content="Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes from 1995 to {{ data_max_year }}.">{% endblock %}
 {% block canonical %}<link rel="canonical" href="https://housepricedashboard.co.uk/browse">{% endblock %}
 
 {% block extra_css %}
@@ -336,12 +336,14 @@
     <script>
         (function () {
             const sel = document.getElementById('browse-year');
-            for (let y = 2026; y >= 1995; y--) {
+            for (let y = {{ data_max_year }}; y >= 1995; y--) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y;
                 sel.appendChild(opt);
             }
+            // Match browse.js DEFAULT_YEAR (last complete year)
+            sel.value = {{ data_max_year }} - 1;
         })();
     </script>
 {% endblock %}

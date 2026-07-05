@@ -68,7 +68,7 @@ async def trigger_update(_=Depends(verify_admin)):
     return result
 
 
-@router.post("/status")
+@router.get("/status")
 async def db_status(_=Depends(verify_admin)):
     """Return current database info."""
     return {

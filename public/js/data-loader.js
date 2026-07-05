@@ -164,11 +164,10 @@ const DataLoader = (function() {
         await Promise.all(promises);
     }
 
-    // Property types for aggregation
-    const PROPERTY_TYPES = ['D', 'S', 'T', 'F'];
-
     /**
-     * Get price statistics for a specific sector, year, and property type
+     * Get price statistics for a specific sector, year, and property type.
+     * Pooled "All" stats ('A') are pre-computed server-side — no client fallback,
+     * since a true pooled median can't be derived from per-type stats.
      * @param {string} sectorId - Postcode sector ID
      * @param {number} year - Year
      * @param {string} propertyType - Property type code (D, S, T, F, A)
@@ -180,48 +179,7 @@ const DataLoader = (function() {
             return null;
         }
 
-        const sectorData = yearData.data[sectorId];
-
-        // If "All" is requested and not pre-computed, calculate on the fly
-        if (propertyType === 'A' && !sectorData['A']) {
-            return computeAllStats(sectorData);
-        }
-
-        if (!sectorData[propertyType]) {
-            return null;
-        }
-
-        return sectorData[propertyType];
-    }
-
-    /**
-     * Compute aggregate stats for all property types
-     * @param {Object} sectorData - Data for a single sector
-     * @returns {Object|null} Aggregated statistics
-     */
-    function computeAllStats(sectorData) {
-        let totalCount = 0;
-        let weightedAvgSum = 0;
-        let medians = [];
-
-        for (const propType of PROPERTY_TYPES) {
-            if (sectorData[propType]) {
-                const stats = sectorData[propType];
-                totalCount += stats.count;
-                weightedAvgSum += stats.avg * stats.count;
-                medians.push(stats.median);
-            }
-        }
-
-        if (totalCount === 0) {
-            return null;
-        }
-
-        return {
-            avg: Math.round(weightedAvgSum / totalCount),
-            median: Math.round(medians.reduce((a, b) => a + b, 0) / medians.length),
-            count: totalCount
-        };
+        return yearData.data[sectorId][propertyType] || null;
     }
 
     /**
@@ -242,18 +200,7 @@ const DataLoader = (function() {
             const sectorData = yearData.data[sectorId];
             if (!sectorData) continue;
 
-            // Handle "All" property type
-            if (propertyType === 'A') {
-                // Use pre-computed if available, otherwise compute on the fly
-                if (sectorData['A'] && sectorData['A'].avg) {
-                    prices.push(sectorData['A'].avg);
-                } else {
-                    const allStats = computeAllStats(sectorData);
-                    if (allStats) {
-                        prices.push(allStats.avg);
-                    }
-                }
-            } else if (sectorData[propertyType] && sectorData[propertyType].avg) {
+            if (sectorData[propertyType] && sectorData[propertyType].avg) {
                 prices.push(sectorData[propertyType].avg);
             }
         }
@@ -471,10 +418,11 @@ const DataLoader = (function() {
      * @returns {number[]}
      */
     function getAvailableYears() {
-        // Return years from 1995 to current year
-        const currentYear = new Date().getFullYear();
+        // Return years from 1995 to the latest year with data
+        // (injected by the server; clock year as fallback)
+        const maxYear = window.DATA_MAX_YEAR || new Date().getFullYear();
         const years = [];
-        for (let year = 1995; year <= currentYear; year++) {
+        for (let year = 1995; year <= maxYear; year++) {
             years.push(year);
         }
         return years;

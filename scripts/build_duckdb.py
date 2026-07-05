@@ -106,6 +106,9 @@ def build(csv_path: Path, inflation_path: Path, district_names_path: Path, out_p
         WHERE price IS NOT NULL
           AND date IS NOT NULL
           AND postcode <> ''
+          -- Category A = standard price paid; B covers repossessions,
+          -- power-of-sale transfers and buy-to-lets, which skew averages
+          AND ppd_category = 'A'
     """)
 
     row_count = con.execute("SELECT COUNT(*) FROM transactions").fetchone()[0]

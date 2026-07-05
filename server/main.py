@@ -20,7 +20,6 @@ from fastapi.staticfiles import StaticFiles
 
 from .admin import router as admin_router
 from .analytics import posthog_client
-from .chat import router as chat_router
 from .data import router as data_router
 from .pages import router as pages_router
 from .updater import check_and_update
@@ -85,7 +84,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(chat_router)
 app.include_router(data_router)
 app.include_router(admin_router)
 app.include_router(pages_router)
@@ -95,10 +93,7 @@ app.include_router(pages_router)
 async def cache_control(request: Request, call_next):
     response = await call_next(request)
     path = request.url.path
-    if path.startswith("/api/chat"):
-        # SSE stream — must never be cached
-        response.headers["Cache-Control"] = "no-store"
-    elif path.startswith("/api/"):
+    if path.startswith("/api/"):
         # Data API: short CDN cache, revalidate frequently
         response.headers.setdefault("Cache-Control", "public, max-age=60, s-maxage=300")
     else:

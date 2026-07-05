@@ -3,7 +3,7 @@
 import logging
 import threading
 from pathlib import Path
-from typing import Any, Callable
+from typing import Callable
 
 import duckdb
 
@@ -21,10 +21,17 @@ class DatabaseManager:
         self._init_lock = threading.Lock()
         self._query_lock = threading.Lock()
         self._swap_callbacks: list[Callable] = []
+        self._generation = 0
 
     @property
     def current_path(self) -> Path | None:
         return self._db_path
+
+    @property
+    def generation(self) -> int:
+        """Increments on every swap — used to key caches so results computed
+        against an old database can never satisfy post-swap requests."""
+        return self._generation
 
     def register_swap_callback(self, fn: Callable) -> None:
         """Register a function to call after a successful DB swap."""
@@ -46,6 +53,8 @@ class DatabaseManager:
         con = duckdb.connect(str(path), read_only=True)
         con.execute(f"SET memory_limit='{config.DUCKDB_MEMORY_LIMIT}'")
         con.execute(f"SET threads={config.DUCKDB_THREADS}")
+        # Defence in depth: no reading local files / URLs via SQL functions
+        con.execute("SET enable_external_access=false")
         self._con = con
         self._db_path = path
         logger.info("Opened DuckDB file: %s", path.name)
@@ -72,6 +81,7 @@ class DatabaseManager:
             old_path = self._db_path
             old_con = self._con
             self._open(new_path)
+            self._generation += 1
             if old_con is not None:
                 try:
                     old_con.close()
@@ -91,40 +101,18 @@ class DatabaseManager:
             new_path.name,
         )
 
-    def execute_raw(self, sql: str, params: list = []) -> tuple[list[tuple], list[str]]:
+    def execute_raw(self, sql: str, params: list | None = None) -> tuple[list[tuple], list[str]]:
         """Execute a SQL query and return raw rows, serialised through a single lock."""
         with self._query_lock:
             con = self.get_connection()
-            rel = con.execute(sql, params)
+            rel = con.execute(sql, params or [])
             return rel.fetchall(), [desc[0] for desc in rel.description]
-
-    def execute_query(self, sql: str) -> list[dict[str, Any]]:
-        """Execute a SQL query and return rows as a list of dicts, capped at MAX_ROWS."""
-        with self._query_lock:
-            con = self.get_connection()
-            rel = con.execute(sql)
-            columns = [desc[0] for desc in rel.description]
-            rows = rel.fetchmany(config.MAX_ROWS + 1)
-
-        truncated = len(rows) > config.MAX_ROWS
-        rows = rows[: config.MAX_ROWS]
-
-        result = [dict(zip(columns, row)) for row in rows]
-
-        if truncated:
-            result.append({"_truncated": True, "message": f"Results truncated to {config.MAX_ROWS} rows"})
-
-        return result
 
 
 # Module-level singleton
 db = DatabaseManager()
 
 
-# Backward-compatible module-level functions
-def execute_raw(sql: str, params: list = []) -> tuple[list[tuple], list[str]]:
+# Backward-compatible module-level function
+def execute_raw(sql: str, params: list | None = None) -> tuple[list[tuple], list[str]]:
     return db.execute_raw(sql, params)
-
-
-def execute_query(sql: str) -> list[dict[str, Any]]:
-    return db.execute_query(sql)

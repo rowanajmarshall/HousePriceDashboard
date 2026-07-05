@@ -3,8 +3,9 @@
  */
 (function () {
     const YEAR_MIN = 1995;
-    const YEAR_MAX = 2026;
-    const DEFAULT_YEAR = 2025;
+    // Latest year with data — injected by the server, clock year as fallback
+    const YEAR_MAX = window.DATA_MAX_YEAR || new Date().getFullYear();
+    const DEFAULT_YEAR = YEAR_MAX - 1; // last complete year
 
     const PROP_TYPES = [
         { code: 'A', label: 'All Types' },

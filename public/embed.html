@@ -310,8 +310,10 @@
 
         const VALID_TYPES = ['A', 'D', 'S', 'T', 'F'];
 
+        // Static page (no server templating) — clock year approximates the latest data year
+        const MAX_YEAR = new Date().getFullYear();
         const params = new URLSearchParams(window.location.search);
-        let year = Math.max(1995, Math.min(2026, parseInt(params.get('year')) || 2026));
+        let year = Math.max(1995, Math.min(MAX_YEAR, parseInt(params.get('year')) || MAX_YEAR));
         let propertyType = VALID_TYPES.includes(params.get('type')) ? params.get('type') : 'A';
 
         const slider    = document.getElementById('year-slider');
@@ -345,6 +347,7 @@
         }
 
         // Sync slider to initial year
+        slider.max = MAX_YEAR;
         slider.value = year;
         yearDisp.textContent = year;
         setActiveType(propertyType);

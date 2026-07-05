@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}House Price Dashboard{% endblock %}
-{% block meta_description %}<meta name="description" content="Interactive UK house price heatmap with 30 years of data. Search any postcode to explore average prices, trends and transaction volumes from 1995 to 2026.">{% endblock %}
+{% block meta_description %}<meta name="description" content="Interactive UK house price heatmap with 30 years of data. Search any postcode to explore average prices, trends and transaction volumes from 1995 to {{ data_max_year }}.">{% endblock %}
 {% block canonical %}<link rel="canonical" href="https://housepricedashboard.co.uk/">{% endblock %}
 
 {% block structured_data %}
@@ -79,9 +79,9 @@
                     <div class="filter-group">
                         <label class="filter-label" for="year-filter">Year</label>
                         <div class="year-selector">
-                            <input type="range" id="year-slider" min="1995" max="2026" value="2026">
+                            <input type="range" id="year-slider" min="1995" max="{{ data_max_year }}" value="{{ data_max_year }}">
                             <div class="year-display">
-                                <span id="year-value">2026</span>
+                                <span id="year-value">{{ data_max_year }}</span>
                             </div>
                             <div id="year-disclaimer" class="year-disclaimer" style="visibility:hidden;">(data for this year is incomplete and may give unusual answers)</div>
                         </div>
@@ -122,13 +122,13 @@
                             <div class="dual-range-track">
                                 <div class="dual-range-fill" id="change-range-fill"></div>
                             </div>
-                            <input type="range" class="dual-range-input" id="start-year-slider" min="1995" max="2026" value="2014">
-                            <input type="range" class="dual-range-input" id="end-year-slider" min="1995" max="2026" value="2026">
+                            <input type="range" class="dual-range-input" id="start-year-slider" min="1995" max="{{ data_max_year }}" value="2014">
+                            <input type="range" class="dual-range-input" id="end-year-slider" min="1995" max="{{ data_max_year }}" value="{{ data_max_year }}">
                         </div>
                         <div class="year-display">
                             <span id="start-year-value">2014</span>
                             <span class="year-range-sep"> – </span>
-                            <span id="end-year-value">2026</span>
+                            <span id="end-year-value">{{ data_max_year }}</span>
                         </div>
                         <div id="change-year-disclaimer" class="year-disclaimer" style="visibility:hidden;">(data for this year is incomplete and may give unusual answers)</div>
                     </div>

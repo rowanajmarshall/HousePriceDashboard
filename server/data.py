@@ -2,6 +2,11 @@
 /api/data/* endpoints — serve price, inflation, and district-name data from DuckDB.
 
 All results are cached in-process with lru_cache (safe: DB is read-only).
+Cache keys include db.generation so a query racing a hot-swap can never
+leave stale pre-swap data in the cache.
+
+Endpoints are deliberately sync `def` — FastAPI runs them in its threadpool,
+keeping blocking DuckDB work off the event loop.
 """
 
 import json
@@ -11,7 +16,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
 from .cache import register_cache
-from .database import execute_raw
+from .database import db, execute_raw
 
 router = APIRouter(prefix="/api/data")
 
@@ -20,8 +25,8 @@ router = APIRouter(prefix="/api/data")
 # /api/data/prices/{year}
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=10)
-def _load_prices(year: int) -> bytes:
+@lru_cache(maxsize=64)
+def _load_prices_cached(year: int, _generation: int) -> bytes:
     # Per-type stats (D, S, T, F) for the given year
     rows, _ = execute_raw("""
         SELECT
@@ -59,11 +64,15 @@ def _load_prices(year: int) -> bytes:
     # Pre-serialize: one bytes object is far cheaper than thousands of Python dicts
     return json.dumps({"year": year, "data": data}).encode()
 
-register_cache(_load_prices)
+register_cache(_load_prices_cached)
+
+
+def _load_prices(year: int) -> bytes:
+    return _load_prices_cached(year, db.generation)
 
 
 @router.get("/prices/{year}")
-async def prices(year: int):
+def prices(year: int):
     if year < 1995 or year > 2100:
         raise HTTPException(status_code=400, detail="Invalid year")
     try:
@@ -76,8 +85,8 @@ async def prices(year: int):
 # /api/data/inflation
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=None)
-def _load_inflation() -> dict:
+@lru_cache(maxsize=4)
+def _load_inflation_cached(_generation: int) -> dict:
     rows, _ = execute_raw("SELECT year, index FROM cpi ORDER BY year")
     return {
         "description": "UK CPI Index (2015 = 100). Source: ONS series D7BT",
@@ -85,11 +94,15 @@ def _load_inflation() -> dict:
         "data": {str(year): index for year, index in rows},
     }
 
-register_cache(_load_inflation)
+register_cache(_load_inflation_cached)
+
+
+def _load_inflation() -> dict:
+    return _load_inflation_cached(db.generation)
 
 
 @router.get("/inflation")
-async def inflation():
+def inflation():
     try:
         return _load_inflation()
     except Exception as exc:
@@ -101,7 +114,7 @@ async def inflation():
 # ---------------------------------------------------------------------------
 
 @lru_cache(maxsize=256)
-def _load_district(code: str) -> bytes:
+def _load_district_cached(code: str, _generation: int) -> bytes:
     rows, _ = execute_raw("""
         SELECT
             YEAR(date)                             AS year,
@@ -146,11 +159,15 @@ def _load_district(code: str) -> bytes:
         "data": data,
     }).encode()
 
-register_cache(_load_district)
+register_cache(_load_district_cached)
+
+
+def _load_district(code: str) -> bytes:
+    return _load_district_cached(code, db.generation)
 
 
 @router.get("/district/{code}")
-async def get_district(code: str):
+def get_district(code: str):
     code = code.upper()
     if not code or len(code) > 4:
         raise HTTPException(status_code=400, detail="Invalid district code")
@@ -168,17 +185,37 @@ async def get_district(code: str):
 # /api/data/district-names
 # ---------------------------------------------------------------------------
 
-@lru_cache(maxsize=None)
-def _load_district_names() -> dict:
+@lru_cache(maxsize=4)
+def _load_district_names_cached(_generation: int) -> dict:
     rows, _ = execute_raw("SELECT district, name FROM district_names")
     return {district: name for district, name in rows}
 
-register_cache(_load_district_names)
+register_cache(_load_district_names_cached)
+
+
+def _load_district_names() -> dict:
+    return _load_district_names_cached(db.generation)
 
 
 @router.get("/district-names")
-async def get_district_names():
+def get_district_names():
     try:
         return _load_district_names()
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
+# Latest year with data — injected into templates as window.DATA_MAX_YEAR
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=4)
+def _data_max_year_cached(_generation: int) -> int:
+    rows, _ = execute_raw("SELECT YEAR(MAX(date)) FROM transactions")
+    return rows[0][0]
+
+register_cache(_data_max_year_cached)
+
+
+def data_max_year() -> int:
+    return _data_max_year_cached(db.generation)

@@ -2,7 +2,7 @@
 
 {% block title %}Compare Areas | House Price Dashboard{% endblock %}
 {% block extra_head %}<base href="/">{% endblock %}
-{% block meta_description %}<meta name="description" content="Compare house price history across multiple UK postcode districts — side-by-side charts and statistics from 1995 to 2026.">{% endblock %}
+{% block meta_description %}<meta name="description" content="Compare house price history across multiple UK postcode districts — side-by-side charts and statistics from 1995 to {{ data_max_year }}.">{% endblock %}
 {% block canonical %}<link rel="canonical" href="https://housepricedashboard.co.uk/compare">{% endblock %}
 
 {% block main %}
@@ -50,7 +50,7 @@
                             <span class="controls-label">Price</span>
                             <div class="compare-mode-toggle">
                                 <button class="compare-mode-btn active" data-mode="nominal">Nominal</button>
-                                <button class="compare-mode-btn" data-mode="real">Real (2026 &pound;)</button>
+                                <button class="compare-mode-btn" data-mode="real">Real ({{ data_max_year }} &pound;)</button>
                             </div>
                         </div>
                     </div>
@@ -84,7 +84,7 @@
 
                     <!-- Attribution -->
                     <div class="area-attribution">
-                        <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Inflation data: <a href="https://www.ons.gov.uk/" target="_blank" rel="noopener">ONS CPI series D7BT</a>. Real prices expressed in 2026 pounds.</p>
+                        <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Inflation data: <a href="https://www.ons.gov.uk/" target="_blank" rel="noopener">ONS CPI series D7BT</a>. Real prices expressed in {{ data_max_year }} pounds.</p>
                     </div>
 
                 </div>

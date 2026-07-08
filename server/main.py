@@ -10,6 +10,7 @@ API routes are mounted under /api/.
 
 import asyncio
 import logging
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -27,7 +28,8 @@ from .updater import check_and_update
 def _configure_logging() -> None:
     from uvicorn.logging import DefaultFormatter
 
-    handler = logging.StreamHandler()
+    # stdout, not the default stderr — Railway marks all stderr lines as errors
+    handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(
         DefaultFormatter(
             fmt="%(asctime)s %(levelprefix)s %(name)s: %(message)s",

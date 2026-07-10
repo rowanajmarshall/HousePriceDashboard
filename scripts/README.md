@@ -9,8 +9,9 @@ All scripts use [uv](https://docs.astral.sh/uv/) inline script metadata (PEP 723
 ```bash
 cd scripts
 
-# Download postcode district boundaries (GB only)
+# Download postcode district boundaries (GB only), then simplify for the frontend
 uv run download_boundaries.py
+uv run simplify_boundaries.py
 
 # Download Land Registry price data (~4GB)
 uv run download_data.py
@@ -22,15 +23,27 @@ uv run process_prices.py
 ## Scripts
 
 ### `download_boundaries.py`
-Downloads UK postcode district boundaries from GitHub and combines them into a single GeoJSON file.
+Downloads UK postcode district boundaries from GitHub and combines them into a single raw GeoJSON file.
 
 ```bash
 uv run download_boundaries.py
 ```
 
-**Output:** `../public/data/boundaries.geojson` (~4MB simplified, 2,736 districts)
+**Output:** `raw_data/boundaries_raw.geojson` (unsimplified, 2,736 districts)
 
 **Note:** Currently excludes Northern Ireland (BT postcodes) as the source doesn't include them.
+
+### `simplify_boundaries.py`
+Simplifies the raw boundaries for the frontend using mapshaper (via `npx`). Simplification is topology-aware: shared borders between adjacent districts are simplified once, so polygons stay snapped together with no sliver gaps or overlaps. Do not replace this with per-polygon simplification (e.g. shapely `simplify()`) — that is what caused the gaps between map tiles.
+
+```bash
+uv run simplify_boundaries.py
+```
+
+**Input:** `raw_data/boundaries_raw.geojson`
+**Output:** `../public/data/boundaries.geojson`
+
+Or run both steps with `make build-boundaries` from the repo root.
 
 ### `download_data.py`
 Downloads the UK Land Registry Price Paid Data.

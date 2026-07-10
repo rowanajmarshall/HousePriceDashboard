@@ -35,7 +35,8 @@ except ImportError:
 
 # Configuration
 INPUT_FILE = "raw_data/postcode_sectors.shp"  # Or .geojson
-OUTPUT_FILE = "../public/data/boundaries.geojson"
+# Raw output; run simplify_boundaries.py to produce the public file
+OUTPUT_FILE = "raw_data/boundaries_raw.geojson"
 
 # Coordinate precision (decimal places)
 COORD_PRECISION = 5
@@ -88,11 +89,9 @@ def process_boundaries():
         print(f"Converting from {gdf.crs} to EPSG:4326...")
         gdf = gdf.to_crs(epsg=4326)
 
-    # Simplify geometries to reduce file size
-    # Tolerance in degrees (~100m at UK latitudes)
-    tolerance = 0.0005
-    print(f"Simplifying geometries (tolerance: {tolerance})...")
-    gdf['geometry'] = gdf['geometry'].simplify(tolerance, preserve_topology=True)
+    # NOTE: no geometry simplification here. Per-polygon simplify() breaks
+    # shared borders between adjacent polygons (sliver gaps/overlaps).
+    # Run simplify_boundaries.py (mapshaper, topology-aware) on the output.
 
     # Build GeoJSON features
     features = []

@@ -20,7 +20,15 @@ const DataLoader = (function() {
     };
 
     // Cache API storage name — increment to bust persisted cache
-    const CACHE_NAME = 'house-price-v2';
+    const CACHE_NAME = 'house-price-v4';
+
+    // Delete stale caches from previous CACHE_NAME versions
+    if ('caches' in window) {
+        caches.keys().then(keys => {
+            keys.filter(k => k.startsWith('house-price-') && k !== CACHE_NAME)
+                .forEach(k => caches.delete(k));
+        }).catch(() => {});
+    }
 
     /**
      * Fetch a JSON resource, using the Cache API for persistence across page loads.

@@ -4,6 +4,14 @@ run:
 download-data:
 	cd scripts && uv run python download_data.py
 
+download-boundaries:
+	cd scripts && uv run python download_boundaries.py
+
+simplify-boundaries:
+	cd scripts && uv run python simplify_boundaries.py
+
+build-boundaries: download-boundaries simplify-boundaries
+
 build-db:
 	uv run python scripts/build_duckdb.py
 

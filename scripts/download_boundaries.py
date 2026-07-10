@@ -9,7 +9,8 @@
 Download UK Postcode District Boundaries from GitHub
 
 Downloads GeoJSON boundaries for all UK postcode areas and combines them
-into a single file for use in the house price heatmap.
+into a single raw file. Run simplify_boundaries.py afterwards to produce
+the simplified file served to the frontend.
 
 Source: https://github.com/missinglink/uk-postcode-polygons
 License: Data derived from Wikipedia/OpenStreetMap
@@ -59,7 +60,7 @@ POSTCODE_AREAS = [
 POSTCODE_AREAS = sorted(set(POSTCODE_AREAS))
 
 BASE_URL = "https://raw.githubusercontent.com/missinglink/uk-postcode-polygons/master/geojson/{}.geojson"
-OUTPUT_FILE = "../public/data/boundaries.geojson"
+OUTPUT_FILE = "raw_data/boundaries_raw.geojson"
 
 
 def download_area(area_code):

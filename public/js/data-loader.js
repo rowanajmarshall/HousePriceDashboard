@@ -20,7 +20,7 @@ const DataLoader = (function() {
     };
 
     // Cache API storage name — increment to bust persisted cache
-    const CACHE_NAME = 'house-price-v4';
+    const CACHE_NAME = 'house-price-v5';
 
     // Delete stale caches from previous CACHE_NAME versions
     if ('caches' in window) {

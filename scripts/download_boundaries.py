@@ -24,7 +24,10 @@ import json
 import requests
 from time import sleep
 
-# All UK postcode areas
+# England & Wales postcode areas only. Scotland (AB, DD, DG, EH, FK, G, HS,
+# IV, KA, KW, KY, ML, PA, PH, TD, ZE) and Northern Ireland (BT) are excluded:
+# Land Registry price data covers England & Wales, and districts without data
+# would render as empty polygons on the map.
 POSTCODE_AREAS = [
     # England
     'AL', 'B', 'BA', 'BB', 'BD', 'BH', 'BL', 'BN', 'BR', 'BS',
@@ -33,7 +36,7 @@ POSTCODE_AREAS = [
     'E', 'EC', 'EN', 'EX',
     'FY',
     'GL', 'GU',
-    'HA', 'HD', 'HG', 'HP', 'HR', 'HS', 'HU', 'HX',
+    'HA', 'HD', 'HG', 'HP', 'HR', 'HU', 'HX',
     'IG', 'IP',
     'KT',
     'L', 'LA', 'LE', 'LN', 'LS', 'LU',
@@ -49,11 +52,6 @@ POSTCODE_AREAS = [
     'YO',
     # Wales
     'CF', 'LD', 'LL', 'NP', 'SA', 'SY',
-    # Scotland
-    'AB', 'DD', 'DG', 'EH', 'FK', 'G', 'HS', 'IV', 'KA', 'KW', 'KY',
-    'ML', 'PA', 'PH', 'TD', 'ZE',
-    # Northern Ireland
-    'BT',
 ]
 
 # Remove duplicates

@@ -23,15 +23,15 @@ uv run process_prices.py
 ## Scripts
 
 ### `download_boundaries.py`
-Downloads UK postcode district boundaries from GitHub and combines them into a single raw GeoJSON file.
+Downloads postcode district boundaries for England & Wales from GitHub and combines them into a single raw GeoJSON file.
 
 ```bash
 uv run download_boundaries.py
 ```
 
-**Output:** `raw_data/boundaries_raw.geojson` (unsimplified, 2,736 districts)
+**Output:** `raw_data/boundaries_raw.geojson` (unsimplified, 2,292 districts)
 
-**Note:** Currently excludes Northern Ireland (BT postcodes) as the source doesn't include them.
+**Note:** Scotland and Northern Ireland are deliberately excluded — Land Registry price data covers England & Wales only, and districts without data would render as empty polygons on the map.
 
 ### `simplify_boundaries.py`
 Simplifies the raw boundaries for the frontend using mapshaper (via `npx`). Simplification is topology-aware: shared borders between adjacent districts are simplified once, so polygons stay snapped together with no sliver gaps or overlaps. Do not replace this with per-polygon simplification (e.g. shapely `simplify()`) — that is what caused the gaps between map tiles.
@@ -115,7 +115,7 @@ python process_prices.py
 - **Source**: GitHub (missinglink/uk-postcode-polygons)
 - **Original data**: Wikipedia/OpenStreetMap
 - **License**: Open data
-- **Coverage**: Great Britain (excludes Northern Ireland)
+- **Coverage**: England & Wales (Scotland and Northern Ireland excluded — no price data)
 
 ## Output Format
 

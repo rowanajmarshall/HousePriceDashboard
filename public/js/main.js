@@ -961,7 +961,7 @@
         function navigate() {
             const areas = get();
             if (areas.length < 1) return;
-            window.location.href = '/compare.html?areas=' + areas.join(',');
+            window.location.href = '/compare?areas=' + areas.join(',');
         }
 
         function colorFor(code) {

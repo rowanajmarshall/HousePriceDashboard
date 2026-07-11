@@ -17,12 +17,15 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .admin import router as admin_router
 from .analytics import posthog_client
 from .data import router as data_router
 from .pages import router as pages_router
+from .templating import templates
 from .updater import check_and_update
 
 def _configure_logging() -> None:
@@ -102,6 +105,16 @@ async def cache_control(request: Request, call_next):
         # Static files: always revalidate
         response.headers.setdefault("Cache-Control", "no-cache")
     return response
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    # Styled 404 page for site URLs; APIs keep JSON errors
+    if exc.status_code == 404 and not request.url.path.startswith("/api/"):
+        return templates.TemplateResponse(request, "404.html", {
+            "subtitle": "Page not found",
+        }, status_code=404)
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
 
 @app.get("/api/")

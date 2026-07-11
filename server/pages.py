@@ -79,6 +79,7 @@ async def embed_page():
 @router.get("/browse", response_class=HTMLResponse)
 async def browse_page(request: Request):
     return templates.TemplateResponse(request, "browse.html", {
+        "active_nav": "browse",
         "subtitle": "Postcode district league table",
         "og_title": "Browse Postcode Districts | House Price Dashboard",
         "og_description": "Browse and compare house prices for every UK postcode district. Sortable league table of average prices, median prices and sales volumes.",

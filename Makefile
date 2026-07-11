@@ -10,7 +10,10 @@ download-boundaries:
 simplify-boundaries:
 	cd scripts && uv run python simplify_boundaries.py
 
-build-boundaries: download-boundaries simplify-boundaries
+build-neighbours:
+	cd scripts && uv run python build_neighbours.py
+
+build-boundaries: download-boundaries simplify-boundaries build-neighbours
 
 build-db:
 	uv run python scripts/build_duckdb.py

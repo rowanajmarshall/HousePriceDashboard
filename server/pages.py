@@ -7,12 +7,14 @@ header, nav, share button, footer, and analytics.
 
 import json
 import re
+from datetime import date
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
-from .data import _load_district, data_max_year
+from .data import _load_district, _load_district_names, data_max_year
 from .database import execute_raw
 from .templating import templates
 
@@ -169,10 +171,35 @@ def _district_name(code: str) -> str | None:
     return rows[0][0] if rows else None
 
 
-def _ssr_summary(code: str, place: str | None) -> str | None:
-    """Query the DB for district stats and return a pre-rendered summary sentence.
+@lru_cache(maxsize=1)
+def _neighbours() -> dict:
+    """District adjacency map built by scripts/build_neighbours.py."""
+    try:
+        with open(ROOT / "public" / "data" / "neighbours.json") as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
-    Returns None if the district has no data (signals a 404).
+
+def _fmt_price(value: int) -> str:
+    return f"£{value:,}"
+
+
+_TYPE_LABELS = [
+    ("A", "All types"),
+    ("D", "Detached"),
+    ("S", "Semi-detached"),
+    ("T", "Terraced"),
+    ("F", "Flats/maisonettes"),
+]
+
+
+def _ssr_content(code: str, place: str | None) -> dict | None:
+    """Query the DB for district stats and pre-render the crawlable page content:
+    summary and trend paragraphs, a per-type stats table, and nearby districts.
+
+    Headline figures use the latest complete year — the current calendar year
+    only has partial data. Returns None if the district has no data (404).
     """
     try:
         district_data = json.loads(_load_district(code))
@@ -185,21 +212,100 @@ def _ssr_summary(code: str, place: str | None) -> str | None:
 
     years = sorted(int(y) for y in data.keys())
     latest_year = years[-1]
-    latest_all = data[str(latest_year)].get("A", {})
-    total_transactions = sum(
-        data[str(y)].get("A", {}).get("count", 0) for y in years
-    )
+    current_year = date.today().year
+
+    complete_years = [y for y in years if y != current_year]
+    if not complete_years:
+        return None
+    stats_year = complete_years[-1]
+
+    def all_types(year: int) -> dict:
+        return data.get(str(year), {}).get("A", {})
+
+    a = all_types(stats_year)
+    avg = a.get("avg")
+    if not avg:
+        return None
 
     place_str = f"{place} ({code})" if place else code
-    avg_price = latest_all.get("avg")
 
-    parts = [f"{place_str} house prices cover {years[0]}–{latest_year}"]
-    if avg_price:
-        parts.append(f"average sale price of £{avg_price:,} in {latest_year}")
-    if total_transactions:
-        parts.append(f"{total_transactions:,} recorded transactions")
+    # Headline: latest complete year vs first year, and the peak
+    earliest = next((y for y in complete_years if all_types(y).get("avg")), None)
+    summary = f"The average house price in {place_str} was {_fmt_price(avg)} in {stats_year}"
+    if earliest is not None and earliest < stats_year:
+        e_avg = all_types(earliest)["avg"]
+        pct = round((avg - e_avg) / e_avg * 100)
+        direction = f"up {pct}" if pct >= 0 else f"down {abs(pct)}"
+        summary += f", {direction}% from {_fmt_price(e_avg)} in {earliest}"
+    summary += "."
+    peak_year = max(
+        (y for y in complete_years if all_types(y).get("avg")),
+        key=lambda y: all_types(y)["avg"],
+    )
+    if peak_year != stats_year:
+        peak_avg = all_types(peak_year)["avg"]
+        summary += f" Prices peaked at {_fmt_price(peak_avg)} in {peak_year}."
 
-    return ", ".join(parts) + "."
+    # Trend paragraph: ten-year change, median, lifetime transaction count
+    trend_parts = []
+    decade_ago = stats_year - 10
+    d = all_types(decade_ago)
+    if d.get("avg"):
+        pct10 = round((avg - d["avg"]) / d["avg"] * 100)
+        direction = f"risen {pct10}" if pct10 >= 0 else f"fallen {abs(pct10)}"
+        trend_parts.append(
+            f"Over the last ten years, average prices have {direction}% "
+            f"(from {_fmt_price(d['avg'])} in {decade_ago})"
+        )
+    if a.get("median"):
+        trend_parts.append(
+            f"The median sale price in {stats_year} was {_fmt_price(a['median'])} "
+            f"across {a.get('count', 0):,} sales"
+        )
+    total_transactions = sum(all_types(y).get("count", 0) for y in years)
+    trend_parts.append(
+        f"{total_transactions:,} transactions have been recorded in {code} "
+        f"since {years[0]}"
+    )
+    trend = ". ".join(trend_parts) + "."
+
+    # Partial-year note, so current-year figures are never presented as complete
+    ytd_note = None
+    if latest_year == current_year:
+        ya = all_types(current_year)
+        if ya.get("count"):
+            ytd_note = (
+                f"So far in {current_year}, {ya['count']:,} sales have been recorded "
+                f"at an average price of {_fmt_price(ya['avg'])} (year to date)."
+            )
+
+    # Per-type stats table for the latest complete year
+    year_data = data.get(str(stats_year), {})
+    stats_rows = []
+    for key, label in _TYPE_LABELS:
+        t = year_data.get(key)
+        stats_rows.append({
+            "label": label,
+            "avg": _fmt_price(t["avg"]) if t and t.get("avg") else "—",
+            "median": _fmt_price(t["median"]) if t and t.get("median") else "—",
+            "count": f"{t['count']:,}" if t and t.get("count") else "—",
+        })
+
+    # Geographically adjacent districts (shared boundary), for internal links
+    names = _load_district_names()
+    neighbour_items = [
+        {"code": n, "label": f"{names[n]} – {n}" if names.get(n) else n}
+        for n in _neighbours().get(code, [])
+    ]
+
+    return {
+        "summary": summary,
+        "trend": trend,
+        "ytd_note": ytd_note,
+        "stats_year": stats_year,
+        "stats_rows": stats_rows,
+        "neighbour_items": neighbour_items,
+    }
 
 
 # ── Area page (SSR) ─────────────────────────────────────────────────────────
@@ -233,20 +339,21 @@ def area_page(request: Request, code: str):
         f"price trends for the {code} postcode district."
     )
 
-    summary = _ssr_summary(code, place)
-    if summary is None:
+    content = _ssr_content(code, place)
+    if content is None:
         raise HTTPException(status_code=404)
 
     canonical = f"https://housepricedashboard.co.uk/area/{code}"
 
     return templates.TemplateResponse(request, "area-page.html", {
         "title": title,
+        "label": label,
         "description": description,
         "canonical": canonical,
         "og_title": title,
         "og_description": description,
         "robots": "index, follow",
-        "summary": summary,
+        **content,
         "has_data": True,
         "subtitle": "Postcode area price history",
         "posthog": True,

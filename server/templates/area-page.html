@@ -283,6 +283,10 @@
         body.embed-mode .area-heading,
         body.embed-mode .area-controls,
         body.embed-mode .area-attribution,
+        body.embed-mode .area-summary,
+        body.embed-mode .ssr-stats,
+        body.embed-mode .nearby-districts,
+        body.embed-mode .area-compare-link,
         body.embed-mode .chart-actions,
         body.embed-mode .embed-panel {
             display: none !important;
@@ -371,6 +375,83 @@
             margin-bottom: var(--spacing-xl);
         }
 
+        .area-trend,
+        .area-ytd-note {
+            margin-top: calc(-1 * var(--spacing-lg));
+        }
+
+        .area-ytd-note {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-light);
+        }
+
+        .ssr-stats {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .ssr-stats h2 {
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .ssr-stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: var(--font-size-md);
+        }
+
+        .ssr-stats-table th,
+        .ssr-stats-table td {
+            text-align: right;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .ssr-stats-table th:first-child,
+        .ssr-stats-table td:first-child {
+            text-align: left;
+            padding-left: 0;
+        }
+
+        .ssr-stats-table th {
+            color: var(--color-text-light);
+            font-weight: 600;
+        }
+
+        .nearby-districts {
+            margin-top: var(--spacing-xl);
+        }
+
+        .nearby-districts h2 {
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .nearby-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .nearby-list a {
+            display: inline-block;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border: 1px solid var(--color-border);
+            border-radius: 999px;
+            text-decoration: none;
+            color: var(--color-primary);
+            font-size: var(--font-size-sm);
+        }
+
+        .nearby-list a:hover {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+
         .area-attribution {
             margin-top: var(--spacing-lg);
             padding-top: var(--spacing-md);
@@ -431,7 +512,7 @@
                     </a>
                 </div>
 
-                <h1 class="area-heading" id="area-heading">Loading...</h1>
+                <h1 class="area-heading" id="area-heading">{{ label | default('Loading...') }}</h1>
 
                 <!-- Error state -->
                 <div class="area-error" id="area-error" style="display: none;"></div>
@@ -445,8 +526,26 @@
                 <!-- Content (shown after data loads) -->
                 <div id="area-content"{% if not has_data %} style="display: none;"{% endif %}>
 
-                    <!-- Summary text (populated by JS, indexed by Google) -->
-                    <p class="area-summary" id="area-summary">{{ summary | default('') }}</p>
+                    <!-- Server-rendered summary, trend and stats (indexed by Google) -->
+                    <p class="area-summary" id="area-summary"{% if summary %} data-ssr="1"{% endif %}>{{ summary | default('') }}</p>
+                    {% if trend %}<p class="area-summary area-trend">{{ trend }}</p>{% endif %}
+                    {% if ytd_note %}<p class="area-summary area-ytd-note">{{ ytd_note }}</p>{% endif %}
+
+                    {% if stats_rows %}
+                    <div class="ssr-stats">
+                        <h2>{{ stats_year }} prices at a glance</h2>
+                        <table class="ssr-stats-table">
+                            <thead>
+                                <tr><th>Property type</th><th>Average price</th><th>Median price</th><th>Sales</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for row in stats_rows %}
+                                <tr><td>{{ row.label }}</td><td>{{ row.avg }}</td><td>{{ row.median }}</td><td>{{ row.count }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
 
                     <!-- Controls -->
                     <div class="area-controls">
@@ -570,6 +669,18 @@
                         <div class="embed-footer" id="embed-footer-volume"></div>
                     </div>
 
+                    {% if neighbour_items %}
+                    <!-- Nearby districts (internal links) -->
+                    <div class="nearby-districts">
+                        <h2>Nearby districts</h2>
+                        <ul class="nearby-list">
+                            {% for n in neighbour_items %}
+                            <li><a href="/area/{{ n.code }}">{{ n.label }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
                     <!-- Attribution -->
                     <div class="area-attribution">
                         <p>Data source: <a href="https://www.gov.uk/government/statistical-data-sets/price-paid-data-downloads" target="_blank" rel="noopener">UK Land Registry Price Paid Data</a>. Inflation data: <a href="https://www.ons.gov.uk/" target="_blank" rel="noopener">ONS CPI series D7BT</a>. Real prices expressed in {{ data_max_year }} pounds.</p>
@@ -588,7 +699,7 @@
 
     <!-- Application JS -->
     <script src="/js/data-loader.js?v=25"></script>
-    <script src="/js/area.js?v=1"></script>
+    <script src="/js/area.js?v=2"></script>
     <script>
         (function() {
             var pathParts = window.location.pathname.replace(/\/$/, '').split('/');

@@ -110,6 +110,9 @@
         if (isEmbed) return;
         const el = document.getElementById('area-summary');
         if (!el) return;
+        // Server-rendered summary is the source of truth (uses the latest
+        // complete year); don't replace it with a partial-year version
+        if (el.dataset.ssr === '1') return;
 
         const fmt = p => '\u00a3' + Math.round(p).toLocaleString('en-GB');
 

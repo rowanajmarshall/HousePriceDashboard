@@ -66,6 +66,67 @@ def _download_from_s3(dest: Path) -> None:
         raise
 
 
+# A real dataset has ~30M transactions; far fewer means a truncated build
+_MIN_TRANSACTIONS = 1_000_000
+
+
+def _verify_active_database() -> bool:
+    """Run real queries against the newly active database.
+
+    Old files are only cleaned up when this passes — a database that opens
+    but is truncated or missing tables must never trigger deletion of the
+    known-good previous files.
+    """
+    try:
+        rows, _ = db.execute_raw("SELECT COUNT(*) FROM transactions")
+        count = rows[0][0]
+        if count < _MIN_TRANSACTIONS:
+            logger.error(
+                "Active DB failed verification: only %s transactions (expected >= %s)",
+                f"{count:,}", f"{_MIN_TRANSACTIONS:,}",
+            )
+            return False
+        rows, _ = db.execute_raw("SELECT YEAR(MAX(date)) FROM transactions")
+        if not rows or rows[0][0] is None:
+            logger.error("Active DB failed verification: no max transaction date")
+            return False
+        for table in ("cpi", "district_names"):
+            rows, _ = db.execute_raw(f"SELECT COUNT(*) FROM {table}")
+            if rows[0][0] == 0:
+                logger.error("Active DB failed verification: %s table is empty", table)
+                return False
+    except Exception:
+        logger.exception("Active DB failed verification with an error")
+        return False
+    logger.info("Active DB passed verification (%s transactions)", f"{count:,}")
+    return True
+
+
+def _cleanup_old_databases(keep_previous: int = 1) -> list[str]:
+    """Delete stale .duckdb files from DATA_DIR after a swap.
+
+    Never touches the active database; keeps the `keep_previous` most recent
+    non-active files as rollback candidates and deletes the rest. Without this,
+    every update leaves another GB-scale file behind until the volume fills.
+    """
+    active = db.current_path.resolve() if db.current_path else None
+    candidates = sorted(
+        (p for p in config.DATA_DIR.glob("*.duckdb") if p.resolve() != active),
+        key=lambda p: (_extract_date(p) or date.min, p.name),
+        reverse=True,
+    )
+    deleted = []
+    for p in candidates[keep_previous:]:
+        try:
+            p.unlink()
+            deleted.append(p.name)
+        except OSError:
+            logger.warning("Could not delete old DuckDB file: %s", p.name, exc_info=True)
+    if deleted:
+        logger.info("Deleted %d old DuckDB file(s): %s", len(deleted), ", ".join(deleted))
+    return deleted
+
+
 async def check_and_update() -> dict:
     """Check S3 for a newer DB. Download and swap if found.
 
@@ -126,4 +187,15 @@ async def check_and_update() -> dict:
         await asyncio.to_thread(_download_from_s3, dest)
 
     db.swap(dest)
-    return {"status": "swapped", "old": str(current), "new": str(remote_date)}
+
+    # Only delete old files once the new database demonstrably works
+    verified = _verify_active_database()
+    deleted = _cleanup_old_databases() if verified else []
+
+    return {
+        "status": "swapped",
+        "old": str(current),
+        "new": str(remote_date),
+        "verified": verified,
+        "deleted": deleted,
+    }

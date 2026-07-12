@@ -1,6 +1,3 @@
-run:
-	npx serve public
-
 download-data:
 	cd scripts && uv run python download_data.py
 

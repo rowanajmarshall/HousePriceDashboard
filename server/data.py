@@ -22,41 +22,70 @@ router = APIRouter(prefix="/api/data")
 
 
 # ---------------------------------------------------------------------------
+# district_year_stats — pre-computed at ETL time (scripts/build_duckdb.py).
+# All hot-path queries hit this ~350K-row table instead of the 30M-row
+# transactions table, keeping DuckDB's buffer pool (and process RSS) small.
+# The fallback exists only for a hot-swapped DB built before the table was
+# added; it can be removed once all deployed DBs include it.
+# ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=4)
+def _has_agg_table_cached(_generation: int) -> bool:
+    rows, _ = execute_raw("""
+        SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_name = 'district_year_stats'
+    """)
+    return rows[0][0] > 0
+
+register_cache(_has_agg_table_cached)
+
+
+def _has_agg_table() -> bool:
+    return _has_agg_table_cached(db.generation)
+
+
+# ---------------------------------------------------------------------------
 # /api/data/prices/{year}
 # ---------------------------------------------------------------------------
 
 @lru_cache(maxsize=64)
 def _load_prices_cached(year: int, _generation: int) -> bytes:
-    # Per-type stats (D, S, T, F) for the given year
-    rows, _ = execute_raw("""
-        SELECT
-            district,
-            property_type,
-            CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
-            CAST(MEDIAN(price) AS INTEGER)         AS median,
-            COUNT(*)                               AS count
-        FROM transactions
-        WHERE YEAR(date) = ?
-          AND property_type IN ('D', 'S', 'T', 'F')
-        GROUP BY district, property_type
-    """, [year])
+    if _has_agg_table():
+        rows, _ = execute_raw("""
+            SELECT district, property_type, avg, median, count
+            FROM district_year_stats
+            WHERE year = ?
+        """, [year])
+    else:
+        # Per-type stats (D, S, T, F) plus pooled all-types ('A') for the year
+        rows, _ = execute_raw("""
+            SELECT
+                district,
+                property_type,
+                CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
+                CAST(MEDIAN(price) AS INTEGER)         AS median,
+                COUNT(*)                               AS count
+            FROM transactions
+            WHERE YEAR(date) = ?
+              AND property_type IN ('D', 'S', 'T', 'F')
+            GROUP BY district, property_type
 
-    # All-types aggregate (true pooled avg/median across D+S+T+F)
-    all_rows, _ = execute_raw("""
-        SELECT
-            district,
-            'A'                                    AS property_type,
-            CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
-            CAST(MEDIAN(price) AS INTEGER)         AS median,
-            COUNT(*)                               AS count
-        FROM transactions
-        WHERE YEAR(date) = ?
-          AND property_type IN ('D', 'S', 'T', 'F')
-        GROUP BY district
-    """, [year])
+            UNION ALL
+
+            SELECT
+                district,
+                'A'                                    AS property_type,
+                CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
+                CAST(MEDIAN(price) AS INTEGER)         AS median,
+                COUNT(*)                               AS count
+            FROM transactions
+            WHERE YEAR(date) = ?
+              AND property_type IN ('D', 'S', 'T', 'F')
+            GROUP BY district
+        """, [year, year])
 
     data: dict[str, dict] = {}
-    for district, prop_type, avg, median, count in rows + all_rows:
+    for district, prop_type, avg, median, count in rows:
         if district not in data:
             data[district] = {}
         data[district][prop_type] = {"avg": avg, "median": median, "count": count}
@@ -115,31 +144,38 @@ def inflation():
 
 @lru_cache(maxsize=256)
 def _load_district_cached(code: str, _generation: int) -> bytes:
-    rows, _ = execute_raw("""
-        SELECT
-            YEAR(date)                             AS year,
-            property_type,
-            CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
-            CAST(MEDIAN(price) AS INTEGER)         AS median,
-            COUNT(*)                               AS count
-        FROM transactions
-        WHERE district = ?
-          AND property_type IN ('D', 'S', 'T', 'F')
-        GROUP BY YEAR(date), property_type
+    if _has_agg_table():
+        rows, _ = execute_raw("""
+            SELECT year, property_type, avg, median, count
+            FROM district_year_stats
+            WHERE district = ?
+        """, [code])
+    else:
+        rows, _ = execute_raw("""
+            SELECT
+                YEAR(date)                             AS year,
+                property_type,
+                CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
+                CAST(MEDIAN(price) AS INTEGER)         AS median,
+                COUNT(*)                               AS count
+            FROM transactions
+            WHERE district = ?
+              AND property_type IN ('D', 'S', 'T', 'F')
+            GROUP BY YEAR(date), property_type
 
-        UNION ALL
+            UNION ALL
 
-        SELECT
-            YEAR(date)                             AS year,
-            'A'                                    AS property_type,
-            CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
-            CAST(MEDIAN(price) AS INTEGER)         AS median,
-            COUNT(*)                               AS count
-        FROM transactions
-        WHERE district = ?
-          AND property_type IN ('D', 'S', 'T', 'F')
-        GROUP BY YEAR(date)
-    """, [code, code])
+            SELECT
+                YEAR(date)                             AS year,
+                'A'                                    AS property_type,
+                CAST(ROUND(AVG(price)) AS INTEGER)    AS avg,
+                CAST(MEDIAN(price) AS INTEGER)         AS median,
+                COUNT(*)                               AS count
+            FROM transactions
+            WHERE district = ?
+              AND property_type IN ('D', 'S', 'T', 'F')
+            GROUP BY YEAR(date)
+        """, [code, code])
 
     name_rows, _ = execute_raw(
         "SELECT name FROM district_names WHERE district = ?", [code]
@@ -211,7 +247,10 @@ def get_district_names():
 
 @lru_cache(maxsize=4)
 def _data_max_year_cached(_generation: int) -> int:
-    rows, _ = execute_raw("SELECT YEAR(MAX(date)) FROM transactions")
+    if _has_agg_table():
+        rows, _ = execute_raw("SELECT MAX(year) FROM district_year_stats")
+    else:
+        rows, _ = execute_raw("SELECT YEAR(MAX(date)) FROM transactions")
     return rows[0][0]
 
 register_cache(_data_max_year_cached)

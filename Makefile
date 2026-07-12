@@ -15,7 +15,10 @@ build-boundaries: download-boundaries simplify-boundaries build-neighbours
 build-db:
 	uv run python scripts/build_duckdb.py
 
-update-data: download-data build-db
+build-sitemap:
+	uv run python scripts/build_sitemap.py
+
+update-data: download-data build-db build-sitemap
 
 prod-upload-data:
 	./internal/prod-upload-data.sh

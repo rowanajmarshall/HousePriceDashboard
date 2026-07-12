@@ -43,6 +43,51 @@ COLUMNS = [
 ]
 
 
+def create_aggregates(con: duckdb.DuckDBPyConnection) -> int:
+    """Pre-compute per-district/year/type stats into district_year_stats.
+
+    The server queries only this table at runtime — keeping the hot path off
+    the 30M-row transactions table means DuckDB's buffer pool stays tiny.
+    Rerunnable: drops and rebuilds the table in place.
+    """
+    print("Building district_year_stats…")
+    t0 = time.time()
+    con.execute("DROP TABLE IF EXISTS district_year_stats")
+    con.execute("""
+        CREATE TABLE district_year_stats AS
+        SELECT * FROM (
+            SELECT
+                district,
+                YEAR(date)                             AS year,
+                property_type,
+                CAST(ROUND(AVG(price)) AS INTEGER)     AS avg,
+                CAST(MEDIAN(price) AS INTEGER)         AS median,
+                COUNT(*)                               AS count
+            FROM transactions
+            WHERE property_type IN ('D', 'S', 'T', 'F')
+            GROUP BY district, YEAR(date), property_type
+
+            UNION ALL
+
+            -- 'A' = all types pooled (true combined avg/median, not an average of averages)
+            SELECT
+                district,
+                YEAR(date)                             AS year,
+                'A'                                    AS property_type,
+                CAST(ROUND(AVG(price)) AS INTEGER)     AS avg,
+                CAST(MEDIAN(price) AS INTEGER)         AS median,
+                COUNT(*)                               AS count
+            FROM transactions
+            WHERE property_type IN ('D', 'S', 'T', 'F')
+            GROUP BY district, YEAR(date)
+        )
+        ORDER BY district, year
+    """)
+    count = con.execute("SELECT COUNT(*) FROM district_year_stats").fetchone()[0]
+    print(f"Built district_year_stats: {count:,} rows in {time.time() - t0:.1f}s")
+    return count
+
+
 def build(csv_path: Path, inflation_path: Path, district_names_path: Path, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -161,6 +206,11 @@ def build(csv_path: Path, inflation_path: Path, district_names_path: Path, out_p
     print(f"Imported {len(dn_rows)} district name rows")
 
     # ------------------------------------------------------------------
+    # Pre-computed aggregates (the server's hot path)
+    # ------------------------------------------------------------------
+    agg_count = create_aggregates(con)
+
+    # ------------------------------------------------------------------
     # Summary
     # ------------------------------------------------------------------
     con.execute("CHECKPOINT")
@@ -168,9 +218,10 @@ def build(csv_path: Path, inflation_path: Path, district_names_path: Path, out_p
 
     size_mb = out_path.stat().st_size / (1024 ** 2)
     print(f"\nDone. Database written to {out_path} ({size_mb:.1f} MB)")
-    print(f"  transactions:   {row_count:,} rows")
-    print(f"  cpi:            {len(rows)} rows")
-    print(f"  district_names: {len(dn_rows)} rows")
+    print(f"  transactions:        {row_count:,} rows")
+    print(f"  district_year_stats: {agg_count:,} rows")
+    print(f"  cpi:                 {len(rows)} rows")
+    print(f"  district_names:      {len(dn_rows)} rows")
 
 
 def main():
@@ -179,12 +230,24 @@ def main():
     parser.add_argument("--inflation",       default=str(DEFAULT_INFLATION),      help="Path to inflation.json")
     parser.add_argument("--district-names",  default=str(DEFAULT_DISTRICT_NAMES), help="Path to district-names.json")
     parser.add_argument("--out",             default=str(DEFAULT_OUT),            help="Output .duckdb path")
+    parser.add_argument("--aggregates-only", action="store_true",
+                        help="Only (re)build district_year_stats in an existing database")
     args = parser.parse_args()
 
     csv_path            = Path(args.csv)
     inflation_path      = Path(args.inflation)
     district_names_path = Path(args.district_names)
     out_path            = Path(args.out)
+
+    if args.aggregates_only:
+        if not out_path.exists():
+            print(f"ERROR: database not found: {out_path}", file=sys.stderr)
+            sys.exit(1)
+        con = duckdb.connect(str(out_path))
+        create_aggregates(con)
+        con.execute("CHECKPOINT")
+        con.close()
+        return
 
     if not csv_path.exists():
         print(f"ERROR: CSV not found: {csv_path}", file=sys.stderr)

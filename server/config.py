@@ -8,7 +8,10 @@ DUCKDB_PATH: Path = Path(os.environ.get("DUCKDB_PATH", str(ROOT / "data" / "hous
 POSTHOG_PROJECT_TOKEN: str = os.environ.get("POSTHOG_PROJECT_TOKEN", "")
 POSTHOG_HOST: str = os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com")
 
-DUCKDB_MEMORY_LIMIT: str = os.environ.get("DUCKDB_MEMORY_LIMIT", "128MB")
+# Hot-path queries only touch the small district_year_stats table, so the
+# buffer pool can stay small; raise via env if heavy transactions-table
+# queries are ever added back
+DUCKDB_MEMORY_LIMIT: str = os.environ.get("DUCKDB_MEMORY_LIMIT", "32MB")
 DUCKDB_THREADS: int = int(os.environ.get("DUCKDB_THREADS", "2"))
 
 # Railway S3-compatible storage

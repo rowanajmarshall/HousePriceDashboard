@@ -69,6 +69,9 @@ def _download_from_s3(dest: Path) -> None:
 # A real dataset has ~30M transactions; far fewer means a truncated build
 _MIN_TRANSACTIONS = 1_000_000
 
+# A full aggregate build has ~350K rows (2,360 districts × ~31 years × 5 types)
+_MIN_AGG_ROWS = 100_000
+
 
 def _verify_active_database() -> bool:
     """Run real queries against the newly active database.
@@ -95,6 +98,13 @@ def _verify_active_database() -> bool:
             if rows[0][0] == 0:
                 logger.error("Active DB failed verification: %s table is empty", table)
                 return False
+        rows, _ = db.execute_raw("SELECT COUNT(*) FROM district_year_stats")
+        if rows[0][0] < _MIN_AGG_ROWS:
+            logger.error(
+                "Active DB failed verification: district_year_stats has %s rows (expected >= %s)",
+                f"{rows[0][0]:,}", f"{_MIN_AGG_ROWS:,}",
+            )
+            return False
     except Exception:
         logger.exception("Active DB failed verification with an error")
         return False

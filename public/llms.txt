@@ -10,7 +10,7 @@ Data covers approximately 30 million transactions across ~3,000 postcode distric
 - [Compare](https://housepricedashboard.co.uk/compare.html): Side-by-side comparison of up to four postcode districts. Shows average price, median price, and sales volume from 1995 to 2025.
 - [Browse](https://housepricedashboard.co.uk/browse.html): Sortable league table of all postcode districts by average price, median price, or sales volume for a given year.
 - [Area pages](https://housepricedashboard.co.uk/area/SW1A): Per-district detail page with price history charts and statistics. URL format: `/area/{district}` (e.g. `/area/SW1A`, `/area/E1`).
-- [Attributions](https://housepricedashboard.co.uk/attribution.html): Data source credits.
+- [Attributions](https://housepricedashboard.co.uk/attribution): Data source credits.
 
 ## Data
 

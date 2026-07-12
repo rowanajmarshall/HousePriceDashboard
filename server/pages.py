@@ -12,7 +12,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from .data import _load_district, _load_district_names, data_max_year
 from .database import execute_raw
@@ -39,7 +39,7 @@ async def index_page(request: Request):
     })
 
 
-@router.get("/contact.html", response_class=HTMLResponse)
+@router.get("/contact", response_class=HTMLResponse)
 async def contact_page(request: Request):
     return templates.TemplateResponse(request, "contact.html", {
         "active_nav": "contact",
@@ -49,7 +49,12 @@ async def contact_page(request: Request):
     })
 
 
-@router.get("/attribution.html", response_class=HTMLResponse)
+@router.get("/contact.html")
+async def contact_page_legacy():
+    return RedirectResponse("/contact", status_code=301)
+
+
+@router.get("/attribution", response_class=HTMLResponse)
 async def attribution_page(request: Request):
     return templates.TemplateResponse(request, "attribution.html", {
         "active_nav": "attributions",
@@ -57,6 +62,11 @@ async def attribution_page(request: Request):
         "og_title": "Attribution - House Price Dashboard",
         "og_description": "Data sources and licenses for House Price Dashboard",
     })
+
+
+@router.get("/attribution.html")
+async def attribution_page_legacy():
+    return RedirectResponse("/attribution", status_code=301)
 
 
 @router.get("/compare", response_class=HTMLResponse)

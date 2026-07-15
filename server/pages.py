@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
-    logger.info(f"User IP: {request.client.host}")
+    logger.info(f"User headers: {request.headers}")
     return templates.TemplateResponse(request, "index.html", {
         "active_nav": "map",
         "subtitle": "Explore 30+ years of property prices across England & Wales",

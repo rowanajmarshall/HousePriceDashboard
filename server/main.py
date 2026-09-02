@@ -22,7 +22,6 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .admin import router as admin_router
-from .analytics import posthog_client
 from .data import router as data_router
 from .pages import router as pages_router
 from .templating import templates
@@ -66,8 +65,6 @@ async def lifespan(app: FastAPI):
         await update_task
     except asyncio.CancelledError:
         pass
-    if posthog_client:
-        posthog_client.flush()
 
 
 async def _startup_update_check():

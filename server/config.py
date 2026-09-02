@@ -5,9 +5,6 @@ ROOT = Path(__file__).parent.parent
 
 DUCKDB_PATH: Path = Path(os.environ.get("DUCKDB_PATH", str(ROOT / "data" / "house_prices.duckdb")))
 
-POSTHOG_PROJECT_TOKEN: str = os.environ.get("POSTHOG_PROJECT_TOKEN", "")
-POSTHOG_HOST: str = os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com")
-
 # Hot-path queries only touch the small district_year_stats table, so the
 # buffer pool can stay small; raise via env if heavy transactions-table
 # queries are ever added back

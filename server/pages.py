@@ -37,7 +37,6 @@ async def index_page(request: Request):
         "active_nav": "map",
         "subtitle": "Explore 30+ years of property prices across England & Wales",
         "show_search": True,
-        "posthog": True,
         "og_title": "House Price Dashboard",
         "og_description": "Explore 30+ years of property prices across England & Wales",
     })
@@ -77,7 +76,6 @@ async def attribution_page_legacy():
 async def compare_page(request: Request):
     return templates.TemplateResponse(request, "compare.html", {
         "subtitle": "Area price comparison",
-        "posthog": True,
         "og_title": "Compare Areas | House Price Dashboard",
         "og_description": "Compare house price history across multiple UK postcode districts.",
     }, headers={"Cache-Control": "public, max-age=300, s-maxage=86400"})
@@ -370,5 +368,4 @@ def area_page(request: Request, code: str):
         **content,
         "has_data": True,
         "subtitle": "Postcode area price history",
-        "posthog": True,
     }, headers={"Cache-Control": "public, max-age=3600, s-maxage=86400"})

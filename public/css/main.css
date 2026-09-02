@@ -504,8 +504,11 @@ html, body {
     background: linear-gradient(to right, var(--color-price-low), #8000ff, var(--color-price-high));
 }
 
+/* Pre-load fallback only — updateChangeLegend() replaces this with a gradient
+   whose white stop sits at 0% in the actual range. Colours must match
+   changeColors in heatmap.js. */
 .legend-gradient.change {
-    background: linear-gradient(to right, #c0392b, #e74c3c, #ffffff, #27ae60, #1e8449);
+    background: linear-gradient(to right, #c0392b, #ffffff 50%, #1e8449);
 }
 
 .legend-labels {
@@ -1272,12 +1275,33 @@ html, body {
         flex: 1;
     }
 
-    /* Navigation responsive */
+    /* Navigation responsive.
+       Tighter padding so the five items usually fit outright; flex-start +
+       overflow-x is the fallback on narrow phones. `center` must not be used
+       here — when the row overflows it clips BOTH ends, hiding "Map" and
+       "Share" at once with no way to scroll to them. */
     .header-nav {
         order: 2;
         width: 100%;
-        justify-content: center;
+        justify-content: flex-start;
         margin-top: var(--spacing-sm);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .header-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .header-nav .nav-link {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+        flex-shrink: 0;
+    }
+
+    .header-nav .share-btn {
+        flex-shrink: 0;
     }
 
     /* Contact page responsive */

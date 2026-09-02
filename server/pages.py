@@ -10,7 +10,6 @@ import re
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
-import logging
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -25,14 +24,11 @@ router = APIRouter()
 
 ROOT = Path(__file__).parent.parent
 
-logger = logging.getLogger(__name__)
-
 
 # ── Static page routes ──────────────────────────────────────────────────────
 
 @router.get("/", response_class=HTMLResponse)
 async def index_page(request: Request):
-    logger.info(f"User headers: {request.headers}")
     return templates.TemplateResponse(request, "index.html", {
         "active_nav": "map",
         "subtitle": "Explore 30+ years of property prices across England & Wales",

@@ -369,6 +369,27 @@ const HeatmapModule = (function() {
             minEl.textContent = formatPercent(currentChangeRange.min);
             maxEl.textContent = formatPercent(currentChangeRange.max);
         }
+
+        // The map paints white at exactly 0% (see getChangeColor), so the
+        // legend's white stop has to sit at 0's position in the range —
+        // not at a hardcoded 50%, which misreads every asymmetric range.
+        const bar = document.querySelector('#change-legend .legend-gradient.change');
+        if (bar && currentChangeRange) {
+            const { min, max } = currentChangeRange;
+            const span = max - min;
+            const zeroPct = span === 0
+                ? 50
+                : Math.max(0, Math.min(100, ((0 - min) / span) * 100));
+            bar.style.background = `linear-gradient(to right, ${rgb(changeColors.decrease)} 0%, ` +
+                `${rgb(changeColors.neutral)} ${zeroPct}%, ${rgb(changeColors.increase)} 100%)`;
+        }
+    }
+
+    /**
+     * Format an {r,g,b} constant as a CSS rgb() string
+     */
+    function rgb(c) {
+        return `rgb(${c.r}, ${c.g}, ${c.b})`;
     }
 
     /**

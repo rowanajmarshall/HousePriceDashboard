@@ -91,6 +91,12 @@ app.include_router(admin_router)
 app.include_router(pages_router)
 
 
+# Assets whose URL carries a ?v= cache-buster can be cached indefinitely.
+# NOTE: this makes bumping ?v= in the templates mandatory, not advisory —
+# an un-bumped edit will not reach anyone who has already loaded the page.
+_VERSIONED_SUFFIXES = (".css", ".js", ".png", ".jpg", ".jpeg", ".svg", ".ico", ".woff2")
+
+
 @app.middleware("http")
 async def cache_control(request: Request, call_next):
     response = await call_next(request)
@@ -98,8 +104,14 @@ async def cache_control(request: Request, call_next):
     if path.startswith("/api/"):
         # Data API: short CDN cache, revalidate frequently
         response.headers.setdefault("Cache-Control", "public, max-age=60, s-maxage=300")
+    elif "v" in request.query_params and path.endswith(_VERSIONED_SUFFIXES):
+        # The ?v= makes this URL content-addressed, so the browser never needs
+        # to revalidate — saves a round-trip per asset per page load.
+        response.headers.setdefault(
+            "Cache-Control", "public, max-age=31536000, immutable"
+        )
     else:
-        # Static files: always revalidate
+        # HTML and unversioned assets: always revalidate
         response.headers.setdefault("Cache-Control", "no-cache")
     return response
 

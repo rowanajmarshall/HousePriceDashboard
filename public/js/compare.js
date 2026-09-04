@@ -507,7 +507,12 @@
                 '</div>' +
                 '<div class="compare-stat-row">' +
                     '<span class="compare-stat-label">5-year change</span>' +
-                    '<span class="compare-stat-value" style="color:' + (fiveYearChange >= 0 ? '#27ae60' : '#c0392b') + '">' + fmtChange(fiveYearChange) + '</span>' +
+                    // null is "no comparable data", not a gain — `null >= 0` is
+                    // true in JS, so it must be checked before the sign test.
+                    '<span class="compare-stat-value" style="color:' +
+                        (fiveYearChange == null ? 'var(--color-text-light)'
+                            : fiveYearChange >= 0 ? '#27ae60' : '#c0392b') + '">' +
+                        fmtChange(fiveYearChange) + '</span>' +
                 '</div>';
 
             statsGridEl.appendChild(card);
